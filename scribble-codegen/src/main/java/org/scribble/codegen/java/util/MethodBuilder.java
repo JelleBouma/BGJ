@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 public class MethodBuilder extends JavaBuilder
 {
+	private final List<String> comments = new LinkedList<>();
 	private final List<String> annots = new LinkedList<>();
 	private final List<String> mods = new LinkedList<>();
 	private String ret;  // null for constructor -- void must be set explicitly
@@ -30,14 +31,18 @@ public class MethodBuilder extends JavaBuilder
 
 	protected MethodBuilder()
 	{
-		
 	}
 
 	protected MethodBuilder(String name)
 	{
 		super(name);
 	}
-	
+
+	public void addComments(String... mods)
+	{
+		this.comments.addAll(Arrays.asList(mods));
+	}
+
 	public void addAnnotations(String... mods)
 	{
 		this.annots.addAll(Arrays.asList(mods));
@@ -110,6 +115,11 @@ public class MethodBuilder extends JavaBuilder
 	
 	protected String buildSignature(String meth)
 	{
+		if (!this.comments.isEmpty())
+		{
+			meth += "\t";
+			meth += this.comments.stream().collect(Collectors.joining("\n\t")) + "\n";
+		}
 		if (!this.annots.isEmpty())
 		{
 			meth += "\t";
