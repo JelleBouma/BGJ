@@ -27,7 +27,10 @@ import org.scribble.codegen.java.util.ConstructorBuilder;
 import org.scribble.codegen.java.util.FieldBuilder;
 import org.scribble.codegen.java.util.JavaBuilder;
 import org.scribble.codegen.java.util.MethodBuilder;
+import org.scribble.core.job.CoreArgs;
+import org.scribble.core.job.CoreContext;
 import org.scribble.core.lang.global.GProtocol;
+import org.scribble.core.model.endpoint.EState;
 import org.scribble.core.type.kind.Global;
 import org.scribble.core.type.name.GProtoName;
 import org.scribble.core.type.name.MsgId;
@@ -44,17 +47,20 @@ public class SessionApiGenerator extends ApiGen
 	public static final String ROLE_CLASS = "org.scribble.core.type.name.Role";
 	public static final String SESSION_CLASS = "org.scribble.runtime.session.Session";
 	public static final String SESSIONTYPEFACTORY_CLASS = "org.scribble.core.type.session.STypeFactory";
+	public static final String STATE_CLASS = "org.scribble.runtime.statechans.ScribSocket";
 
 	private static final String IMPATH_FIELD = "IMPATH";
 	private static final String SOURCE_FIELD = "SOURCE";
 	private static final String PROTO_FIELD = "PROTO";
+
+	private static final String STATE_FIELD = "state"; // name of field which will keep track of state
 
 	private final Set<Role> roles = new HashSet<>();
 	private final Set<MsgId<?>> mids = new HashSet<>();
 	
 	private final ClassBuilder cb = new ClassBuilder();
 	private final Map<String, ClassBuilder> classes = new HashMap<>();  // All classes in same package, for protected constructor access
-	
+
 	public SessionApiGenerator(Job job, GProtoName fullname) throws ScribException
 	{
 		super(job, fullname);
@@ -143,6 +149,11 @@ public class SessionApiGenerator extends ApiGen
 		roles += this.roles.stream().map((r) -> r.toString()).collect(Collectors.joining(", "));
 		roles += "}))";
 		fb4.setExpression(roles);
+
+		FieldBuilder fbState = this.cb.newField(SessionApiGenerator.STATE_FIELD);
+		fbState.setType(SessionApiGenerator.STATE_CLASS);
+		fbState.addModifiers(JavaBuilder.PUBLIC, JavaBuilder.STATIC);
+		fbState.setExpression("null");
 		
 		/*for (Role r : this.roles)
 		{

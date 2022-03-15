@@ -164,6 +164,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 		ctor2.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
 		ctor2.addModifiers(JavaBuilder.PUBLIC);
 		ctor2.addBodyLine(JavaBuilder.SUPER + "(" + SESSIONENDPOINT_PARAM + ");");
+		ctor2.addBodyLine(sess + ".state = this;");
 		ctor2.addBodyLine(SESSIONENDPOINT_PARAM + ".init();");
 	}
 	
@@ -174,7 +175,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	{
 		setNextSocketReturnType(this.apigen, mb, succ);
 	}*/
-	
+
 	//protected void addReturnNextSocket(MethodBuilder mb, String nextClass)
 	protected void addReturnNextSocket(MethodBuilder mb, EState s)
 	{
@@ -189,7 +190,20 @@ public abstract class ScribSockGen extends StateChanTypeGen
 		{
 			nextClass = this.apigen.getSocketClassName(s);
 		}
+		mb.addBodyLine("Adder.state" + " = " + JavaBuilder.NEW + " " + nextClass + "(" + SCRIBSOCKET_SE_FIELD + ", true);");
 		mb.addBodyLine(JavaBuilder.RETURN + " " + JavaBuilder.NEW + " " + nextClass + "(" + SCRIBSOCKET_SE_FIELD + ", true);");
+		addVercorsConditions(mb, nextClass);
+	}
+
+	/**
+	 * Adds a pre- and post-condition Vercors comment to check validity of state.
+	 * @param mb The method builder.
+	 * @param nextClass The state after the operation (post-condition).
+	 */
+	protected void addVercorsConditions(MethodBuilder mb, String nextClass)
+	{
+		String state = getSessionClassName() + ".state.getClass()";
+		mb.addComments("//@ requires " + state + " == this.getClass();", "//@ ensures " + state + " == " + nextClass + ".class;");
 	}
 
 	protected String getGarbageBuf(String futureClass)
