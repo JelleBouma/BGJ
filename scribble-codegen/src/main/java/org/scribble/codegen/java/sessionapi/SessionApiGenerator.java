@@ -48,7 +48,7 @@ public class SessionApiGenerator extends ApiGen
 	public static final String ROLE_CLASS = "org.scribble.core.type.name.Role";
 	public static final String SESSION_CLASS = "org.scribble.runtime.session.Session";
 	public static final String SESSIONTYPEFACTORY_CLASS = "org.scribble.core.type.session.STypeFactory";
-	public static final String STATE_CLASS = "org.scribble.runtime.statechans.ScribSocket";
+	public static final String STATE_CLASS = "int";
 
 	private static final String IMPATH_FIELD = "IMPATH";
 	private static final String SOURCE_FIELD = "SOURCE";
@@ -154,7 +154,7 @@ public class SessionApiGenerator extends ApiGen
 		FieldBuilder fbState = this.cb.newField(SessionApiGenerator.STATE_FIELD);
 		fbState.setType(SessionApiGenerator.STATE_CLASS);
 		fbState.addModifiers(JavaBuilder.PUBLIC, JavaBuilder.STATIC);
-		fbState.setExpression("null");
+		fbState.setExpression("0");
 		
 		/*for (Role r : this.roles)
 		{

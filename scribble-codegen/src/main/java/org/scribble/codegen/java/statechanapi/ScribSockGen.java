@@ -161,11 +161,11 @@ public abstract class ScribSockGen extends StateChanTypeGen
 				: MPSTENDPOINT_CLASS;
 		ConstructorBuilder ctor2 = cb.newConstructor(
 				epClass + "<" + sess + ", " + role + "> " + SESSIONENDPOINT_PARAM);
-
+		addVercorsInitialConditions(ctor2);
 		ctor2.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
 		ctor2.addModifiers(JavaBuilder.PUBLIC);
 		ctor2.addBodyLine(JavaBuilder.SUPER + "(" + SESSIONENDPOINT_PARAM + ");");
-		ctor2.addBodyLine(sess + ".state = this;");
+		ctor2.addBodyLine(sess + ".state = " + getStateNumber() + ";");
 		ctor2.addBodyLine(SESSIONENDPOINT_PARAM + ".init();");
 	}
 	
@@ -181,30 +181,55 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	protected void addReturnNextSocket(MethodBuilder mb, EState s)
 	{
 		String nextClass;
+		int nextClassNumber;
 		//if (isTerminalClassName(nextClass))
 		if (s.isTerminal())
 		{
 			mb.addBodyLine(SCRIBSOCKET_SE_FIELD + ".setCompleted();");  // Do before the IO action? in case of exception?
 			nextClass = GENERATED_ENDSOCKET_NAME;// + "<>";
+			nextClassNumber = -1;
 		}
 		else
 		{
 			nextClass = this.apigen.getSocketClassName(s);
+			String[] nextClassParts = nextClass.split("_");
+			nextClassNumber = Integer.parseInt(nextClassParts[nextClassParts.length - 1]);
 		}
-		mb.addBodyLine("Adder.state" + " = " + JavaBuilder.NEW + " " + nextClass + "(" + SCRIBSOCKET_SE_FIELD + ", true);");
+		mb.addBodyLine("Adder.state" + " = " + nextClassNumber + ";");
 		mb.addBodyLine(JavaBuilder.RETURN + " " + JavaBuilder.NEW + " " + nextClass + "(" + SCRIBSOCKET_SE_FIELD + ", true);");
-		addVercorsConditions(mb, nextClass);
+		addVercorsConditions(mb, nextClassNumber);
+	}
+
+	/**
+	 * Adds a pre- and post-condition Vercors comment to the initial state constructor.
+	 * @param cb The constructor builder.
+	 */
+	protected void addVercorsInitialConditions(ConstructorBuilder cb)
+	{
+		String state = getSessionClassName() + ".state";
+		cb.addComments("//@ requires " + state + " == 0;", "//@ ensures " + state + " == " + getStateNumber() + ";");
 	}
 
 	/**
 	 * Adds a pre- and post-condition Vercors comment to check validity of state.
 	 * @param mb The method builder.
-	 * @param nextClass The state after the operation (post-condition).
+	 * @param nextState The state after the operation (post-condition).
 	 */
-	protected void addVercorsConditions(MethodBuilder mb, String nextClass)
+	protected void addVercorsConditions(MethodBuilder mb, int nextState)
 	{
-		String state = getSessionClassName() + ".state.getClass()";
-		mb.addComments("//@ requires " + state + " == this.getClass();", "//@ ensures " + state + " == " + nextClass + ".class;");
+		String state = getSessionClassName() + ".state";
+		mb.addComments("//@ requires " + state + " == " + getStateNumber() + ";", "//@ ensures " + state + " == " + nextState + ";");
+	}
+
+	/**
+	 * @return The number out of the class name of this socket.
+	 */
+	protected int getStateNumber() {
+		if (this.curr.isTerminal())
+			return -1;
+		String currentClass = this.apigen.getSocketClassName(this.curr);
+		String[] currentClassParts = currentClass.split("_");
+		return Integer.parseInt(currentClassParts[currentClassParts.length - 1]);
 	}
 
 	protected String getGarbageBuf(String futureClass)
