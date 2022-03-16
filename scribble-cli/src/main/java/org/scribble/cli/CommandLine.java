@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -383,8 +384,10 @@ public class CommandLine
 			GProtoName fullname = checkGlobalProtocolArg(jobc, args[0]);
 			if (sess)
 			{
-				Map<String, String> out = jgen.generateSessionApi(fullname);
-				outputClasses(out);
+				Map<String, String> out = jgen.generateSessionApi(fullname, false);
+				outputClasses(out, false);
+				Map<String, String> skeletonOut = jgen.generateSessionApi(fullname, true);
+				outputClasses(skeletonOut, true);
 			}
 			if (schan)  // CHECKME: does not implicitly generate sess API?
 			{
@@ -394,13 +397,16 @@ public class CommandLine
 					CBEndpointApiGenerator3 cbgen = new CBEndpointApiGenerator3(job,
 							fullname, self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG));
 					Map<String, String> out = cbgen.build();
-					outputClasses(out);
+					outputClasses(out, false);
 				}
 				else
 				{
 					Map<String, String> out = jgen.generateStateChannelApi(fullname,
 							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG));
-					outputClasses(out);
+					outputClasses(out, false);
+					Map<String, String> skeletonOut = jgen.generateStateChannelApi(fullname,
+							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG), true);
+					outputClasses(skeletonOut, true);
 				}
 			}
 		}
@@ -459,7 +465,7 @@ public class CommandLine
 	}
 
 	// classes: filepath -> class source
-	protected void outputClasses(Map<String, String> classes)
+	protected void outputClasses(Map<String, String> classes, boolean verCorsSkeleton)
 			throws ScribException
 	{
 		Consumer<String> f;
@@ -468,7 +474,7 @@ public class CommandLine
 			String dir = getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0];
 			f = path -> { ScribUtil.handleLambdaScribbleException(() ->
 					{
-						String tmp = dir + "/" + path;
+						String tmp = dir + (verCorsSkeleton ? "/verification-skeleton/" : "/") + path;
 						if (hasFlag(CLFlags.VERBOSE_FLAG))
 						{
 							System.out.println("[DEBUG] Writing to: " + tmp);

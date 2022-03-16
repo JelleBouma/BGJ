@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -34,19 +35,23 @@ public class JEndpointApiGenerator
 		this.job = job;
 	}
 
-	public Map<String, String> generateSessionApi(GProtoName fullname)
+	public Map<String, String> generateSessionApi(GProtoName fullname, boolean skeleton)
 			throws ScribException
 	{
 		this.job.verbosePrintln("\n[Java API gen] Running "
 				+ SessionApiGenerator.class + " for " + fullname);
-		SessionApiGenerator sg = new SessionApiGenerator(this.job, fullname);  // FIXME: reuse?
+		SessionApiGenerator sg = new SessionApiGenerator(this.job, fullname, skeleton);  // FIXME: reuse?
 		Map<String, String> map = sg.generateApi();  // filepath -> class source
 		return map;
 	}
-	
+
+	public Map<String, String> generateStateChannelApi(GProtoName fullname, Role self, boolean subtypes) throws ScribException {
+		return generateStateChannelApi(fullname, self, subtypes, false);
+	}
+
 	// CHECKME: refactor an EndpointApiGenerator -- ?
 	public Map<String, String> generateStateChannelApi(GProtoName fullname,
-			Role self, boolean subtypes) throws ScribException
+			Role self, boolean subtypes, boolean verCorsSkeleton) throws ScribException
 	{
 		/*JobContext jc = this.job.getContext();
 		if (jc.getEndpointGraph(fullname, self) == null)

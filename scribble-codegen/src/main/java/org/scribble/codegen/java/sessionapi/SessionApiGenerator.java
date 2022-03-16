@@ -62,9 +62,16 @@ public class SessionApiGenerator extends ApiGen
 	private final ClassBuilder cb = new ClassBuilder();
 	private final Map<String, ClassBuilder> classes = new HashMap<>();  // All classes in same package, for protected constructor access
 
-	public SessionApiGenerator(Job job, GProtoName fullname) throws ScribException
+	protected boolean skeleton;
+
+	public SessionApiGenerator(Job job, GProtoName fullname) throws ScribException {
+		this(job, fullname, false);
+	}
+
+	public SessionApiGenerator(Job job, GProtoName fullname, boolean skeleton) throws ScribException
 	{
 		super(job, fullname);
+		this.skeleton = skeleton;
 		constructRoleClasses();
 		constructOpClasses();
 		constructSessionClass();  // Depends on the above two being done first
