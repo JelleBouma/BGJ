@@ -158,10 +158,12 @@ public class SessionApiGenerator extends ApiGen
 		roles += "}))";
 		fb4.setExpression(roles);
 
-		FieldBuilder fbState = this.cb.newField(SessionApiGenerator.STATE_FIELD);
-		fbState.setType(SessionApiGenerator.STATE_CLASS);
-		fbState.addModifiers(JavaBuilder.PUBLIC, JavaBuilder.STATIC);
-		fbState.setExpression("0");
+		if (this.skeleton) {
+			FieldBuilder fbState = this.cb.newField(SessionApiGenerator.STATE_FIELD);
+			fbState.setType(SessionApiGenerator.STATE_CLASS);
+			fbState.addModifiers(JavaBuilder.PUBLIC, JavaBuilder.STATIC);
+			fbState.setExpression("0");
+		}
 		
 		/*for (Role r : this.roles)
 		{

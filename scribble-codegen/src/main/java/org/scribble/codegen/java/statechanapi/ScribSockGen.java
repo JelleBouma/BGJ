@@ -161,43 +161,42 @@ public abstract class ScribSockGen extends StateChanTypeGen
 				: MPSTENDPOINT_CLASS;
 		ConstructorBuilder ctor2 = cb.newConstructor(
 				epClass + "<" + sess + ", " + role + "> " + SESSIONENDPOINT_PARAM);
-		addVercorsInitialConditions(ctor2);
+
 		ctor2.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
 		ctor2.addModifiers(JavaBuilder.PUBLIC);
 		ctor2.addBodyLine(JavaBuilder.SUPER + "(" + SESSIONENDPOINT_PARAM + ");");
-		ctor2.addBodyLine(sess + ".state = " + getStateNumber() + ";");
-		ctor2.addBodyLine(SESSIONENDPOINT_PARAM + ".init();");
+		if (apigen.verCorsSkeleton) {
+			addVercorsInitialConditions(ctor2);
+			ctor2.addBodyLine(sess + ".state = " + getStateNumber(this.curr) + ";");
+		}
+		else
+			ctor2.addBodyLine(SESSIONENDPOINT_PARAM + ".init();");
 	}
 	
 	protected abstract void addMethods() throws ScribException;
-	
-	/*@Deprecated
-	protected void setNextSocketReturnType(MethodBuilder mb, EState succ)
-	{
-		setNextSocketReturnType(this.apigen, mb, succ);
-	}*/
 
-	//protected void addReturnNextSocket(MethodBuilder mb, String nextClass)
 	protected void addReturnNextSocket(MethodBuilder mb, EState s)
 	{
 		String nextClass;
-		int nextClassNumber;
-		//if (isTerminalClassName(nextClass))
 		if (s.isTerminal())
 		{
-			mb.addBodyLine(SCRIBSOCKET_SE_FIELD + ".setCompleted();");  // Do before the IO action? in case of exception?
+			if (!apigen.verCorsSkeleton)
+				mb.addBodyLine(SCRIBSOCKET_SE_FIELD + ".setCompleted();");  // Do before the IO action? in case of exception?
 			nextClass = GENERATED_ENDSOCKET_NAME;// + "<>";
-			nextClassNumber = -1;
 		}
 		else
-		{
 			nextClass = this.apigen.getSocketClassName(s);
-			String[] nextClassParts = nextClass.split("_");
-			nextClassNumber = Integer.parseInt(nextClassParts[nextClassParts.length - 1]);
-		}
-		mb.addBodyLine("Adder.state" + " = " + nextClassNumber + ";");
+
 		mb.addBodyLine(JavaBuilder.RETURN + " " + JavaBuilder.NEW + " " + nextClass + "(" + SCRIBSOCKET_SE_FIELD + ", true);");
-		addVercorsConditions(mb, nextClassNumber);
+	}
+
+	/**
+	 * Adds a line to change state.
+	 * @param nextState The state after the operation (post-condition).
+	 */
+	protected void addVercorsStateChange(MethodBuilder mb, int nextState)
+	{
+		mb.addBodyLine("Adder.state" + " = " + nextState + ";");
 	}
 
 	/**
@@ -207,7 +206,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	protected void addVercorsInitialConditions(ConstructorBuilder cb)
 	{
 		String state = getSessionClassName() + ".state";
-		cb.addComments("//@ requires " + state + " == 0;", "//@ ensures " + state + " == " + getStateNumber() + ";");
+		cb.addComments("//@ requires " + state + " == 0;", "//@ ensures " + state + " == " + getStateNumber(this.curr) + ";");
 	}
 
 	/**
@@ -218,18 +217,19 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	protected void addVercorsConditions(MethodBuilder mb, int nextState)
 	{
 		String state = getSessionClassName() + ".state";
-		mb.addComments("//@ requires " + state + " == " + getStateNumber() + ";", "//@ ensures " + state + " == " + nextState + ";");
+		mb.addComments("//@ requires " + state + " == " + getStateNumber(this.curr) + ";", "//@ ensures " + state + " == " + nextState + ";");
 	}
 
 	/**
-	 * @return The number out of the class name of this socket.
+	 * @param s The state.
+	 * @return The number out of the class name of the state.
 	 */
-	protected int getStateNumber() {
-		if (this.curr.isTerminal())
+	protected int getStateNumber(EState s) {
+		if (s.isTerminal())
 			return -1;
-		String currentClass = this.apigen.getSocketClassName(this.curr);
-		String[] currentClassParts = currentClass.split("_");
-		return Integer.parseInt(currentClassParts[currentClassParts.length - 1]);
+		String socketClassName = this.apigen.getSocketClassName(s);
+		String[] socketClassNameParts = socketClassName.split("_");
+		return Integer.parseInt(socketClassNameParts[socketClassNameParts.length - 1]);
 	}
 
 	protected String getGarbageBuf(String futureClass)

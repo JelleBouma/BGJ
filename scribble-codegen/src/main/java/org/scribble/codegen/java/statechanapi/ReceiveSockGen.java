@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -74,7 +75,11 @@ public class ReceiveSockGen extends ScribSockGen
 		Module main = this.apigen.getMainModule();  // FIXME: main not necessarily the right module?
 
 		MethodBuilder mb = makeReceiveHeader(a, succ);
-		if (a.mid.isOp())
+		if (apigen.verCorsSkeleton) {
+			addVercorsStateChange(mb, getStateNumber(succ));
+			addVercorsConditions(mb, getStateNumber(succ));
+		}
+		else if (a.mid.isOp())
 		{
 			//addReceiveOpParams(mb, main, a);
 			String ln = a.payload.isEmpty() ? "" : StateChannelApiGenerator.SCRIBMESSAGE_CLASS + " " + RECEIVE_MESSAGE_PARAM + " = ";
@@ -119,7 +124,12 @@ public class ReceiveSockGen extends ScribSockGen
 		mb.addParameters(BUF_CLASS + "<" + futureClass + "> " + RECEIVE_ARG_PREFIX);  // Method for future-buf even if no payload, for sync action
 		//mb.addBodyLine(ClassBuilder.SUPER + ".use();");
 		//mb2.addBodyLine(ARG_PREFIX + ".val = " + " " + ClassBuilder.SUPER + ".getFuture(" + getPrefixedRoleClassName(a.peer) + ");");
-		mb.addBodyLine(RECEIVE_ARG_PREFIX + "." + BUFF_VAL_FIELD + " = "
+		if (apigen.verCorsSkeleton) {
+			addVercorsStateChange(mb, getStateNumber(succ));
+			addVercorsConditions(mb, getStateNumber(succ));
+		}
+		else
+			mb.addBodyLine(RECEIVE_ARG_PREFIX + "." + BUFF_VAL_FIELD + " = "
 					+ JavaBuilder.NEW + " " + futureClass + "(" + JavaBuilder.SUPER + ".getFuture(" + getSessionApiRoleConstant(a.obj) + "));");
 		addReturnNextSocket(mb, succ);
 	}
@@ -128,6 +138,10 @@ public class ReceiveSockGen extends ScribSockGen
 	private void makeAsyncDiscardMethod(EAction a, EState succ, String futureClass)
 	{
 		MethodBuilder mb = makeAsyncDiscardHeader(a, succ, futureClass);
+		if (apigen.verCorsSkeleton) {
+			addVercorsStateChange(mb, getStateNumber(succ));
+			addVercorsConditions(mb, getStateNumber(succ));
+		}
 		mb.addBodyLine(JavaBuilder.RETURN + " async(" + SessionApiGenerator.getSessionClassName(apigen.getGProtocolName()) + "." + a.obj + ", " + StateChannelApiGenerator.RECEIVE_OP_PARAM + ", " + getGarbageBuf(futureClass) + ");");
 		mb.addAnnotations("@SuppressWarnings(\"unchecked\")");  // To cast the generic garbage buf
 	}

@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -94,8 +95,11 @@ public class OutputSockGen extends ScribSockGen
 			{
 				this.cb.addImports(getOpsPackageName() + ".*");  // FIXME: repeated
 			}
-
-			if (a.isSend())
+			if (apigen.verCorsSkeleton) {
+				addVercorsStateChange(mb, getStateNumber(succ));
+				addVercorsConditions(mb, getStateNumber(succ));
+			}
+			else if (a.isSend())
 			{
 				if (a.mid.isOp())
 				{	

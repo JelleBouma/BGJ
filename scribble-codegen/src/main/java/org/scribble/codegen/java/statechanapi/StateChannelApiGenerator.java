@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -53,15 +54,16 @@ public class StateChannelApiGenerator extends ApiGen
 	protected final boolean skipIOInterfacesGeneration;
 
 	private int counter = 1;
+	public boolean verCorsSkeleton;
 	private Map<EState, String> classNames = new HashMap<>();  // Doesn't include terminal states
 
 	private Map<String, TypeBuilder> types = new HashMap<>();  // class/iface name key
 
-	public StateChannelApiGenerator(Job job, GProtoName fullname, Role self)
+	public StateChannelApiGenerator(Job job, GProtoName fullname, Role self, boolean verCorsSkeleton)
 			throws ScribException // CHECKME: APIGenerationException?
 	{
 		super(job, fullname);
-
+		this.verCorsSkeleton = verCorsSkeleton;
 		this.self = self;
 		this.lpn = InlinedProjector.getFullProjectionName(fullname, self);
 		//this.init = job.getContext().getEndpointGraph(fullname, self).init;

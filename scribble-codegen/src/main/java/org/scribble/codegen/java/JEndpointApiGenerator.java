@@ -61,7 +61,7 @@ public class JEndpointApiGenerator
 		job.verbosePrintln("\n[Java API gen] Running "
 				+ StateChannelApiGenerator.class + " for " + fullname + "@" + self);
 		StateChannelApiGenerator apigen = new StateChannelApiGenerator(this.job,
-				fullname, self);
+				fullname, self, verCorsSkeleton);
 		IOInterfacesGenerator iogen = null;
 		try
 		{
