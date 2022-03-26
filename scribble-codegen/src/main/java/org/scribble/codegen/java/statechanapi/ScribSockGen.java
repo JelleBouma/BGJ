@@ -206,7 +206,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	protected void addVercorsInitialConditions(ConstructorBuilder cb)
 	{
 		String state = getSessionClassName() + ".state";
-		cb.addComments("//@ requires " + state + " == 0;", "//@ ensures " + state + " == " + getStateNumber(this.curr) + ";");
+		cb.addComments("//@ context Perm(" + state + ", 1);", "//@ requires " + state + " == 0;", "//@ ensures " + state + " == " + getStateNumber(this.curr) + ";");
 	}
 
 	/**
@@ -217,7 +217,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	protected void addVercorsConditions(MethodBuilder mb, int nextState)
 	{
 		String state = getSessionClassName() + ".state";
-		mb.addComments("//@ requires " + state + " == " + getStateNumber(this.curr) + ";", "//@ ensures " + state + " == " + nextState + ";");
+		mb.addComments("//@ context Perm(" + state + ", 1);", "//@ requires " + state + " == " + getStateNumber(this.curr) + ";", "//@ ensures " + state + " == " + nextState + ";");
 	}
 
 	/**
