@@ -142,8 +142,9 @@ public class ReceiveSockGen extends ScribSockGen
 			addVercorsStateChange(mb, getStateNumber(succ));
 			addVercorsConditions(mb, getStateNumber(succ));
 		}
+		else
+			mb.addAnnotations("@SuppressWarnings(\"unchecked\")");  // To cast the generic garbage buf
 		mb.addBodyLine(JavaBuilder.RETURN + " async(" + SessionApiGenerator.getSessionClassName(apigen.getGProtocolName()) + "." + a.obj + ", " + StateChannelApiGenerator.RECEIVE_OP_PARAM + ", " + getGarbageBuf(futureClass) + ");");
-		mb.addAnnotations("@SuppressWarnings(\"unchecked\")");  // To cast the generic garbage buf
 	}
 
 	private MethodBuilder makeAsyncDiscardHeader(EAction a, EState succ, String futureClass)

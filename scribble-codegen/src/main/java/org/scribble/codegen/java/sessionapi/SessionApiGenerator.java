@@ -177,7 +177,8 @@ public class SessionApiGenerator extends ApiGen
 		}*/
 
 		MethodBuilder mb = this.cb.newMethod("getRoles");
-		mb.addAnnotations("@Override");
+		if (!this.skeleton)
+			mb.addAnnotations("@Override");
 		mb.addModifiers(JavaBuilder.PUBLIC);
 		mb.setReturn("List<Role>");
 		mb.addParameters();
