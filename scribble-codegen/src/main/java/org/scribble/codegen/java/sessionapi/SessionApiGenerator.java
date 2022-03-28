@@ -48,6 +48,11 @@ public class SessionApiGenerator extends ApiGen
 	public static final String ROLE_CLASS = "org.scribble.core.type.name.Role";
 	public static final String SESSION_CLASS = "org.scribble.runtime.session.Session";
 	public static final String SESSIONTYPEFACTORY_CLASS = "org.scribble.core.type.session.STypeFactory";
+	public static final String GPROTOCOLNAME_CLASS_SHORT = "GProtoName";
+	public static final String OP_CLASS_SHORTS = "Op";
+	public static final String ROLE_CLASS_SHORT = "Role";
+	public static final String SESSION_CLASS_SHORT = "Session";
+	public static final String SESSIONTYPEFACTORY_CLASS_SHORT = "STypeFactory";
 	public static final String STATE_CLASS = "int";
 
 	private static final String IMPATH_FIELD = "IMPATH";
@@ -121,7 +126,7 @@ public class SessionApiGenerator extends ApiGen
 			this.cb.addImports(getOpsPackageName(this.gpn) + ".*");
 		}
 		this.cb.addModifiers(JavaBuilder.PUBLIC, JavaBuilder.FINAL);
-		this.cb.setSuperClass(SessionApiGenerator.SESSION_CLASS);
+		this.cb.setSuperClass(skeleton ? SESSION_CLASS_SHORT : SESSION_CLASS);
 		
 		FieldBuilder fb1 = this.cb.newField(SessionApiGenerator.IMPATH_FIELD);
 		fb1.setType("List<String>");
@@ -134,9 +139,9 @@ public class SessionApiGenerator extends ApiGen
 		fb2.setExpression("\"getSource\"");
 
 		FieldBuilder fb3 = this.cb.newField(SessionApiGenerator.PROTO_FIELD);
-		fb3.setType(SessionApiGenerator.GPROTOCOLNAME_CLASS);
+		fb3.setType(skeleton ? GPROTOCOLNAME_CLASS_SHORT : GPROTOCOLNAME_CLASS);
 		fb3.addModifiers(JavaBuilder.PUBLIC, JavaBuilder.STATIC, JavaBuilder.FINAL);
-		fb3.setExpression(SessionApiGenerator.SESSIONTYPEFACTORY_CLASS
+		fb3.setExpression((skeleton ? SESSIONTYPEFACTORY_CLASS_SHORT : SESSIONTYPEFACTORY_CLASS)
 				+ ".parseGlobalProtocolName(\"" + gpn + "\")");
 
 		this.roles.forEach(r -> addRoleField(this.cb, r));
@@ -201,7 +206,7 @@ public class SessionApiGenerator extends ApiGen
 		fb.setType(type);
 		fb.addModifiers(JavaBuilder.PUBLIC, JavaBuilder.STATIC, JavaBuilder.FINAL);
 		//fb.setExpression(ClassBuilder.NEW + " " + type + "()");
-		fb.setExpression(getEndpointApiRootPackageName(this.gpn) + "." + subpack + "." + type + "." + type);  // Currently requires source Scribble to be in a package that is not the root -- can fix by generating to a subpackage based on Module and/or protocol
+		fb.setExpression((skeleton ? "" : (getEndpointApiRootPackageName(this.gpn) + "." + subpack + ".")) + type + "." + type);  // Currently requires source Scribble to be in a package that is not the root -- can fix by generating to a subpackage based on Module and/or protocol
 	}
 	
 	private void constructOpClasses() throws ScribException
