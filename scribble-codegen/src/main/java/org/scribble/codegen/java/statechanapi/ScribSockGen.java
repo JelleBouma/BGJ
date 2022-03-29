@@ -38,9 +38,13 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	public static final String SESSIONENDPOINT_CLASS = "org.scribble.runtime.session.SessionEndpoint";
 	public static final String MPSTENDPOINT_CLASS = "org.scribble.runtime.session.MPSTEndpoint";
 	public static final String EXPLICITENDPOINT_CLASS = "org.scribble.runtime.session.ExplicitEndpoint";
+	public static final String SESSIONENDPOINT_CLASS_SHORT = "SessionEndpoint";
+	public static final String MPSTENDPOINT_CLASS_SHORT = "MPSTEndpoint";
+	public static final String EXPLICITENDPOINT_CLASS_SHORT = "ExplicitEndpoint";
 	public static final String OPENUM_INTERFACE = "org.scribble.runtime.session.OpEnum";
 
 	public static final String BUF_CLASS = "org.scribble.runtime.util.Buf";
+	public static final String BUF_CLASS_SHORT = "Buf";
 
 	//public static final String CONNECTSOCKET_CLASS = "org.scribble.statechans.ConnectSocket";
 	public static final String ACCEPTSOCKET_CLASS = "org.scribble.runtime.statechans.AcceptSocket";
@@ -50,6 +54,12 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	public static final String BRANCHSOCKET_CLASS = "org.scribble.runtime.statechans.BranchSocket";
 	public static final String CASESOCKET_CLASS = "org.scribble.runtime.statechans.CaseSocket";
 	public static final String ENDSOCKET_CLASS = "org.scribble.runtime.statechans.EndSocket";
+	public static final String ACCEPTSOCKET_CLASS_SHORT = "AcceptSocket";
+	public static final String OUTPUTSOCKET_CLASS_SHORT = "OutputSocket";
+	public static final String RECEIVESOCKET_CLASS_SHORT = "ReceiveSocket";
+	public static final String BRANCHSOCKET_CLASS_SHORT = "BranchSocket";
+	public static final String CASESOCKET_CLASS_SHORT = "CaseSocket";
+	public static final String ENDSOCKET_CLASS_SHORT = "EndSocket";
 
 	public static final String SCRIBSERVERSOCKET_CLASS = "org.scribble.runtime.net.ScribServerSocket";
 
@@ -131,7 +141,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 		final String sess = getSessionClassName();
 		final String role = getSelfClassName();
 
-		ConstructorBuilder ctor = cb.newConstructor(SESSIONENDPOINT_CLASS + "<" + sess + ", " + role + "> " + SESSIONENDPOINT_PARAM, "boolean dummy");
+		ConstructorBuilder ctor = cb.newConstructor((apigen.verCorsSkeleton ? SESSIONENDPOINT_CLASS_SHORT : SESSIONENDPOINT_CLASS) + "<" + sess + ", " + role + "> " + SESSIONENDPOINT_PARAM, "boolean dummy");
 		ctor.addModifiers(JavaBuilder.PROTECTED);
 		ctor.addBodyLine(JavaBuilder.SUPER + "(" + SESSIONENDPOINT_PARAM + ");");
 		if (this.curr.equals(this.apigen.getInitialState()))
@@ -157,12 +167,12 @@ public abstract class ScribSockGen extends StateChanTypeGen
 		GProtoDecl gpd = (GProtoDecl) this.apigen.getJob().getContext()
 				.getModule(this.apigen.gpn.getPrefix())
 				.getGProtocolDeclChild(this.apigen.gpn.getSimpleName());
-		String epClass = gpd.isExplicit() ? EXPLICITENDPOINT_CLASS
-				: MPSTENDPOINT_CLASS;
+		String epClass = gpd.isExplicit() ? (apigen.verCorsSkeleton ? EXPLICITENDPOINT_CLASS_SHORT : EXPLICITENDPOINT_CLASS)
+				: (apigen.verCorsSkeleton ? MPSTENDPOINT_CLASS_SHORT : MPSTENDPOINT_CLASS);
 		ConstructorBuilder ctor2 = cb.newConstructor(
 				epClass + "<" + sess + ", " + role + "> " + SESSIONENDPOINT_PARAM);
 
-		ctor2.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
+		ctor2.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
 		ctor2.addModifiers(JavaBuilder.PUBLIC);
 		ctor2.addBodyLine(JavaBuilder.SUPER + "(" + SESSIONENDPOINT_PARAM + ");");
 		if (apigen.verCorsSkeleton) {
@@ -235,7 +245,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 	protected String getGarbageBuf(String futureClass)
 	{
 		//return ClassBuilder.NEW + " " + BUFF_CLASS + "<>()";  // Makes a trash Buff every time, but clean -- would be more efficient to generate the code to spawn the future without buff-ing it (partly duplicate of the normal receive generated code) 
-		return "(" + BUF_CLASS + "<" + futureClass + ">) " + SCRIBSOCKET_SE_FIELD + ".gc";  // FIXME: generic cast warning (this.ep.gc is Buff<?>) -- also retains unnecessary reference to the last created garbage future (but allows no-arg receive/async to be generated as simple wrapper call)
+		return "(" + (apigen.verCorsSkeleton ? BUF_CLASS_SHORT : BUF_CLASS) + "<" + futureClass + ">) " + SCRIBSOCKET_SE_FIELD + ".gc";  // FIXME: generic cast warning (this.ep.gc is Buff<?>) -- also retains unnecessary reference to the last created garbage future (but allows no-arg receive/async to be generated as simple wrapper call)
 	}
 	
 	// Not fully qualified, just Session API class prefix
@@ -293,7 +303,7 @@ public abstract class ScribSockGen extends StateChanTypeGen
 		{
 			GProtoName gpn = apigen.getGProtocolName();
 			Role self = apigen.getSelf();
-			ret = SessionApiGenerator.getStateChannelPackageName(gpn, self) + "." + GENERATED_ENDSOCKET_NAME;
+			ret = (apigen.verCorsSkeleton ? "" : (SessionApiGenerator.getStateChannelPackageName(gpn, self) + ".")) + GENERATED_ENDSOCKET_NAME;
 					//+ "<" + SessionApiGenerator.getSessionClassName(gpn) + ", " + SessionApiGenerator.getRoleClassName(self) + ">";
 		}
 		else

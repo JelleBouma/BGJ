@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -102,12 +103,12 @@ public class HandlerIfaceGen extends AuxStateChanTypeGen
 
 		if (a.mid.isOp())
 		{	
-			ReceiveSockGen.addReceiveOpParams(mb, apigen.getMainModule(), a, false);
+			ReceiveSockGen.addReceiveOpParams(mb, apigen.getMainModule(), a, false, apigen.verCorsSkeleton);
 		}
 		else //if (a.mid.isMessageSigName())
 		{
 			SigDecl msd = main.getSigDeclChild(((SigName) a.mid).getSimpleName());  // FIXME: might not belong to main module
-			ReceiveSockGen.addReceiveMessageSigNameParams(mb, msd, false);
+			ReceiveSockGen.addReceiveMessageSigNameParams(mb, msd, false, apigen.verCorsSkeleton);
 		}
 	}
 

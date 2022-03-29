@@ -38,7 +38,7 @@ public class ReceiveSockGen extends ScribSockGen
 	@Override
 	protected String getSuperClassType()
 	{
-		return RECEIVESOCKET_CLASS + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
+		return (apigen.verCorsSkeleton ? RECEIVESOCKET_CLASS_SHORT : RECEIVESOCKET_CLASS) + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
 	}
 
 	@Override
@@ -118,10 +118,10 @@ public class ReceiveSockGen extends ScribSockGen
 		mb.addModifiers(JavaBuilder.PUBLIC);//, ClassBuilder.SYNCHRONIZED);
 		//setNextSocketReturnType(mb, succ);
 		setNextSocketReturnType(this.apigen, mb, succ);
-		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM);
 		mb.addParameters(opClass + " " + StateChannelApiGenerator.RECEIVE_OP_PARAM);
-		mb.addParameters(BUF_CLASS + "<" + futureClass + "> " + RECEIVE_ARG_PREFIX);  // Method for future-buf even if no payload, for sync action
+		mb.addParameters((apigen.verCorsSkeleton ? BUF_CLASS_SHORT : BUF_CLASS) + "<" + futureClass + "> " + RECEIVE_ARG_PREFIX);  // Method for future-buf even if no payload, for sync action
 		//mb.addBodyLine(ClassBuilder.SUPER + ".use();");
 		//mb2.addBodyLine(ARG_PREFIX + ".val = " + " " + ClassBuilder.SUPER + ".getFuture(" + getPrefixedRoleClassName(a.peer) + ");");
 		if (apigen.verCorsSkeleton) {
@@ -174,26 +174,26 @@ public class ReceiveSockGen extends ScribSockGen
 			
 		mb.setName("receive");
 		mb.addModifiers(JavaBuilder.PUBLIC);
-		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "java.io.IOException", "ClassNotFoundException");
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "java.io.IOException", "ClassNotFoundException");
 		//, "ExecutionException", "InterruptedException");
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM, opClass + " " + StateChannelApiGenerator.RECEIVE_OP_PARAM);
 		if (a.mid.isOp())
 		{
-			addReceiveOpParams(mb, main, a, true);
+			addReceiveOpParams(mb, main, a, true, apigen.verCorsSkeleton);
 		}
 		else //if (a.mid.isMessageSigName())
 		{
 			SigDecl msd = main.getSigDeclChild(((SigName) a.mid).getSimpleName());  // FIXME: might not belong to main module
-			addReceiveMessageSigNameParams(mb, msd, true);
+			addReceiveMessageSigNameParams(mb, msd, true, apigen.verCorsSkeleton);
 		}
 	}
 
 	// FIXME: main may not be the right module
-	protected static void addReceiveOpParams(MethodBuilder mb, Module main, EAction a, boolean superr) throws ScribException
+	protected static void addReceiveOpParams(MethodBuilder mb, Module main, EAction a, boolean superr, boolean verCorsSkeleton) throws ScribException
 	{
 		if (!a.payload.isEmpty())
 		{
-			String buffSuper = BUF_CLASS + "<" + ((superr) ? "? " + JavaBuilder.SUPER + " " : "");
+			String buffSuper = (verCorsSkeleton ? BUF_CLASS_SHORT : BUF_CLASS) + "<" + ((superr) ? "? " + JavaBuilder.SUPER + " " : "");
 			int i = 1;
 			for (PayElemType<?> pt : a.payload.elems)
 			{
@@ -222,10 +222,10 @@ public class ReceiveSockGen extends ScribSockGen
 		}
 	}
 
-	protected static void addReceiveMessageSigNameParams(MethodBuilder mb, SigDecl msd, boolean superr) throws ScribException
+	protected static void addReceiveMessageSigNameParams(MethodBuilder mb, SigDecl msd, boolean superr, boolean verCorsSkeleton) throws ScribException
 	{
 		ScribSockGen.checkMessageSigNameDecl(msd);
-		mb.addParameters(BUF_CLASS + "<" + ((superr) ? "? " + JavaBuilder.SUPER + " " : "") + msd.getExtName() + "> " + RECEIVE_ARG_PREFIX);
+		mb.addParameters((verCorsSkeleton ? BUF_CLASS_SHORT : BUF_CLASS) + "<" + ((superr) ? "? " + JavaBuilder.SUPER + " " : "") + msd.getExtName() + "> " + RECEIVE_ARG_PREFIX);
 	}
 
 	// Similar to setReceiveHeader
@@ -237,6 +237,6 @@ public class ReceiveSockGen extends ScribSockGen
 		mb.setName("async"); 
 		mb.addModifiers(JavaBuilder.PUBLIC);
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM, opClass + " " + StateChannelApiGenerator.RECEIVE_OP_PARAM);
-		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS);
 	}
 }

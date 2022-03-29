@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -47,7 +48,7 @@ public class CaseSockGen extends ScribSockGen
 	@Override
 	protected String getSuperClassType()
 	{
-		return CASESOCKET_CLASS + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
+		return (apigen.verCorsSkeleton ? CASESOCKET_CLASS_SHORT : CASESOCKET_CLASS) + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
 	}
 
 	@Override
@@ -224,12 +225,12 @@ public class CaseSockGen extends ScribSockGen
 		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "java.io.IOException", "ClassNotFoundException");//, "ExecutionException", "InterruptedException");
 		if (a.mid.isOp())
 		{
-			ReceiveSockGen.addReceiveOpParams(mb, main, a, true);
+			ReceiveSockGen.addReceiveOpParams(mb, main, a, true, apigen.verCorsSkeleton);
 		}
 		else //if (a.mid.isMessageSigName())
 		{
 			SigDecl msd = main.getSigDeclChild(((SigName) a.mid).getSimpleName());  // FIXME: might not belong to main module
-			ReceiveSockGen.addReceiveMessageSigNameParams(mb, msd, true);
+			ReceiveSockGen.addReceiveMessageSigNameParams(mb, msd, true, apigen.verCorsSkeleton);
 		}
 	}
 

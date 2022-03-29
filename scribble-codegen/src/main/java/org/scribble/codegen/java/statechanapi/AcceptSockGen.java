@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -31,7 +32,7 @@ public class AcceptSockGen extends ScribSockGen
 	@Override
 	protected String getSuperClassType()
 	{
-		return ACCEPTSOCKET_CLASS + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
+		return (apigen.verCorsSkeleton ? ACCEPTSOCKET_CLASS_SHORT : ACCEPTSOCKET_CLASS) + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
 	}
 
 	@Override

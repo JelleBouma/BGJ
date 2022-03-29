@@ -1,5 +1,6 @@
 /**
  * Copyright 2008 The Scribble Authors
+ * This file has been modified by Jelle Bouma
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -31,7 +32,7 @@ public class EndSockGen extends ScribSockGen
 	@Override
 	protected String getSuperClassType()
 	{
-		return ENDSOCKET_CLASS + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
+		return (apigen.verCorsSkeleton ? ENDSOCKET_CLASS_SHORT : ENDSOCKET_CLASS) + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
 	}
 
 	@Override

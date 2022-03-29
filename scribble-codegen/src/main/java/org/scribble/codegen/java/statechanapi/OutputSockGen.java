@@ -42,7 +42,7 @@ public class OutputSockGen extends ScribSockGen
 	@Override
 	protected String getSuperClassType()
 	{
-		return OUTPUTSOCKET_CLASS + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
+		return (apigen.verCorsSkeleton ? OUTPUTSOCKET_CLASS_SHORT : OUTPUTSOCKET_CLASS) + "<" + getSessionClassName() + ", " + getSelfClassName() + ">";
 	}
 
 	@Override
@@ -166,7 +166,7 @@ public class OutputSockGen extends ScribSockGen
 
 		mb.setName("send");
 		mb.addModifiers(JavaBuilder.PUBLIC);
-		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM);  // More params added below
 		if (a.mid.isOp())
 		{
@@ -185,7 +185,7 @@ public class OutputSockGen extends ScribSockGen
 
 		mb.setName("request");
 		mb.addModifiers(JavaBuilder.PUBLIC);
-		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM);  // More params added below
 		mb.addParameters("Callable<? extends BinaryChannelEndpoint> cons");
 		mb.addParameters("String host");
@@ -198,7 +198,7 @@ public class OutputSockGen extends ScribSockGen
 
 		mb.setName("disconnect");
 		mb.addModifiers(JavaBuilder.PUBLIC);
-		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM);
 	}
 
@@ -208,7 +208,7 @@ public class OutputSockGen extends ScribSockGen
 
 		mb.setName("wrapClient");
 		mb.addModifiers(JavaBuilder.PUBLIC);
-		mb.addExceptions(StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException");
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM);
 		mb.addParameters("Callable<? extends BinaryChannelWrapper> wrapper");
 	}
