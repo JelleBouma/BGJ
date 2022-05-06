@@ -174,7 +174,7 @@ public class ReceiveSockGen extends ScribSockGen
 			
 		mb.setName("receive");
 		mb.addModifiers(JavaBuilder.PUBLIC);
-		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "java.io.IOException", "ClassNotFoundException");
+		mb.addExceptions(apigen.verCorsSkeleton ? StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS_SHORT : StateChannelApiGenerator.SCRIBBLERUNTIMEEXCEPTION_CLASS, "IOException", "ClassNotFoundException");
 		//, "ExecutionException", "InterruptedException");
 		mb.addParameters(SessionApiGenerator.getRoleClassName(a.obj) + " " + ROLE_PARAM, opClass + " " + StateChannelApiGenerator.RECEIVE_OP_PARAM);
 		if (a.mid.isOp())

@@ -228,7 +228,11 @@ public class OutputSockGen extends ScribSockGen
 				}
 				DataDecl dtd = main.getTypeDeclChild((DataName) pt);  // FIXME: might not belong to main module  // TODO: if not DataType
 				ScribSockGen.checkJavaDataTypeDecl(dtd);
-				mb.addParameters(dtd.getExtName() + " " + as.next());
+				String typeName = dtd.getExtName();
+				typeName = typeName.equals("java.lang.Integer") ? "int" : typeName; // TODO: there will be more like int
+				String[] typeParts = typeName.split("\\.");
+				typeName = typeParts[typeParts.length - 1];
+				mb.addParameters(typeName + " " + as.next());
 			}
 		}
 	}
