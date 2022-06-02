@@ -3,10 +3,10 @@ package scribblevercors.util;
 public class ClassBuilder {
 
     private String pkg;
-    private ArrayList<String> imports;
+    private ArrayList<String> imports = new ArrayList<>();
     private String access;
     private String name;
-    private ArrayList<String> attributes;
+    private ArrayList<String> attributes = new ArrayList<>();
     private ArrayList<MethodBuilder> methods = new ArrayList<>();
 
     public ClassBuilder(String pkg, String access, String name) {

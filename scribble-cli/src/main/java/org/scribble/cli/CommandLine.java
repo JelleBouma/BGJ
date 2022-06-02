@@ -52,6 +52,7 @@ import org.scribble.util.RuntimeScribException;
 import org.scribble.util.ScribException;
 import org.scribble.util.ScribParserException;
 import org.scribble.util.ScribUtil;
+import scribblevercors.codegen.SessionGenerator;
 
 /**
  * A Scribble extension should override newCLFlags, newCLArgParser, newMain,
@@ -401,6 +402,7 @@ public class CommandLine
 				}
 				else
 				{
+					System.out.print(new SessionGenerator(job, fullname).generateClass());
 					Map<String, String> out = jgen.generateStateChannelApi(fullname,
 							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG));
 					outputClasses(out, false);

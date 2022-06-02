@@ -8,7 +8,13 @@
 	<groupId>org.scribble</groupId>
 	<artifactId>parent</artifactId>
 	<version>0.5.1-SNAPSHOT</version>
-	<packaging>pom</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>org.scribble</groupId>
+            <artifactId>scribble-ast</artifactId>
+        </dependency>
+    </dependencies>
+    <packaging>pom</packaging>
 
 	<dependencyManagement>
 		<dependencies>
@@ -219,7 +225,11 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.2</version>
-			</plugin>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
 			<!-- Produce source jars during the 'verify' phase -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
