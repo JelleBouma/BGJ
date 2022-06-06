@@ -60,13 +60,21 @@ public class SessionGenerator {
 
     void addOperation(Operation operation) {
         MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters());
-        HashSet<String> preconditions = operation.transitions.convertAll(t -> "state == " + t.originState);
-        HashSet<String> postconditions = operation.transitions.convertAll(t -> "(\\old(state) == " + t.originState + " && state == " + t.targetState + ")");
         method.appendComment("@ context Perm(state, 1);");
-        method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
-        method.appendComment("@ ensures " + String.join(" || ", postconditions) + ";");
-        ControlBuilder stateSwitch = method.appendControl("switch(state)");
-        HashSet<String> stateChanges = operation.transitions.convertAll(t -> "case " + t.originState + ": state = " + t.targetState + "; break;");
-        stateSwitch.appendStatements(stateChanges);
+        if (operation.transitions.size() == 1) {
+            StateTransition transition = operation.transitions.iterator().next();
+            method.appendComment("@ requires state == " + transition.originState + ";");
+            method.appendComment("@ ensures state == " + transition.targetState + ";");
+            method.appendStatement("state = " + transition.targetState + ";");
+        }
+        else {
+            HashSet<String> preconditions = operation.transitions.convertAll(t -> "state == " + t.originState);
+            HashSet<String> postconditions = operation.transitions.convertAll(t -> "(\\old(state) == " + t.originState + " && state == " + t.targetState + ")");
+            method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
+            method.appendComment("@ ensures " + String.join(" || ", postconditions) + ";");
+            ControlBuilder stateSwitch = method.appendControl("switch(state)");
+            HashSet<String> stateChanges = operation.transitions.convertAll(t -> "case " + t.originState + ": state = " + t.targetState + "; break;");
+            stateSwitch.appendStatements(stateChanges);
+        }
     }
 }
