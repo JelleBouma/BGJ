@@ -29,6 +29,12 @@ public class ClassBuilder {
         return res;
     }
 
+    public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters) {
+        MethodBuilder res = new MethodBuilder(access, returnType, name, parameters);
+        methods.add(res);
+        return res;
+    }
+
     private String buildIdentifier() {
         return String.join(" ", access, "class", name);
     }
@@ -39,6 +45,8 @@ public class ClassBuilder {
             res.appendLine(1, attribute);
         for (MethodBuilder method : methods) {
             res.skipLine(1);
+            for (String comment : method.comments)
+                res.appendLine(1, comment);
             res.append(method.toString());
         }
         return res.toString();

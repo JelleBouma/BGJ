@@ -402,7 +402,7 @@ public class CommandLine
 				}
 				else
 				{
-					System.out.print(new SessionGenerator(job, fullname).generateClass());
+					System.out.print(new SessionGenerator(job, fullname, self));
 					Map<String, String> out = jgen.generateStateChannelApi(fullname,
 							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG));
 					outputClasses(out, false);

@@ -1,5 +1,7 @@
 package scribblevercors.util;
 
+import java.util.Collection;
+
 public class ControlBuilder extends BlockBuilder {
     private int depth;
     private String controlStatement;
@@ -14,6 +16,12 @@ public class ControlBuilder extends BlockBuilder {
         ControlBuilder res = new ControlBuilder(depth + 1, controlStatement);
         content.add(res);
         return res;
+    }
+
+    public ControlBuilder appendStatements(Iterable<String> statements) {
+        for (String statement : statements)
+            content.add(new StatementBuilder(depth + 1, statement));
+        return this;
     }
 
     public ControlBuilder appendStatement(String statement) {
