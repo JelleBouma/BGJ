@@ -21,12 +21,38 @@ public class Operation {
             for (PayElemType<?> pt : action.payload.elems)
             {
                 String typeName = SessionGenerator.main.getTypeDeclChild((DataName) pt).getExtName();
-                typeName = typeName.equals("java.lang.Integer") ? "int" : typeName; // TODO: there will be more like int
+                typeName = objectTypeToPrimitive(typeName);
                 String[] typeParts = typeName.split("\\.");
                 String argSuffix = action.isSend() ? " arg" + counter : "";
                 payload.add(typeParts[typeParts.length - 1] + argSuffix);
                 counter++;
             }
+        }
+    }
+
+    /**
+     * If the type is an object representation of a primitive (such as java.lang.Integer), convert it to the primitive.
+     * @return The primitive the object represents, if not applicable the input String is returned instead.
+     */
+    private String objectTypeToPrimitive(String objectType) {
+        switch (objectType) {
+            case "java.lang.Boolean":
+                return "boolean";
+            case "java.lang.Byte":
+                return "byte";
+            case "java.lang.Short":
+                return "short";
+            case "java.lang.Char":
+                return "char";
+            case "java.lang.Integer":
+                return "int";
+            case "java.lang.Float":
+                return "float";
+            case "java.lang.Long":
+                return "long";
+            case "java.lang.Double":
+                return "double";
+            default: return objectType;
         }
     }
 
