@@ -17,6 +17,7 @@ import java.util.Locale;
 
 public class SessionGenerator {
 
+    static String pkg;
     Job job;
     static Module main;
     Core core;
@@ -51,8 +52,9 @@ public class SessionGenerator {
 
     public String generateClass() {
         String name = StringUtils.capitalise(gpn.getSimpleName().toString());
-        classBuilder = new ClassBuilder(name.toLowerCase(Locale.ROOT), "public", name);
-        classBuilder.appendAttribute("int", "state");
+        pkg = name.toLowerCase(Locale.ROOT);
+        classBuilder = new ClassBuilder(pkg, "public", name);
+        classBuilder.appendAttribute("", "int", "state");
         for (Operation operation : operations)
             addOperation(operation);
         return classBuilder.toString();
@@ -61,20 +63,23 @@ public class SessionGenerator {
     void addOperation(Operation operation) {
         MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters());
         method.appendComment("@ context Perm(state, 1);");
+        String nonNullCondition = operation.payload.name.equals("") ? "" : " && \\result != null";
         if (operation.transitions.size() == 1) {
             StateTransition transition = operation.transitions.iterator().next();
             method.appendComment("@ requires state == " + transition.originState + ";");
-            method.appendComment("@ ensures state == " + transition.targetState + ";");
+            method.appendComment("@ ensures state == " + transition.targetState + nonNullCondition + ";");
             method.appendStatement("state = " + transition.targetState + ";");
         }
         else {
             HashSet<String> preconditions = operation.transitions.convertAll(t -> "state == " + t.originState);
             HashSet<String> postconditions = operation.transitions.convertAll(t -> "(\\old(state) == " + t.originState + " && state == " + t.targetState + ")");
             method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
-            method.appendComment("@ ensures " + String.join(" || ", postconditions) + ";");
+            method.appendComment("@ ensures " + String.join(" || ", postconditions) + nonNullCondition + ";");
             ControlBuilder stateSwitch = method.appendControl("switch(state)");
             HashSet<String> stateChanges = operation.transitions.convertAll(t -> "case " + t.originState + ": state = " + t.targetState + "; break;");
             stateSwitch.appendStatements(stateChanges);
         }
+        if (!operation.getReturnType().equals("void"))
+            method.appendStatement(operation.payload.getDefaultReturnStatement());
     }
 }

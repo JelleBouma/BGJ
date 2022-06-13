@@ -15,7 +15,7 @@ public class ClassBuilder {
         this.name = name;
     }
 
-    public void appendAttribute(String type, String name) {
+    public void appendAttribute(String access, String type, String name) {
         attributes.add(type + " " + name + ";");
     }
 
@@ -23,9 +23,9 @@ public class ClassBuilder {
         imports.add(imprt);
     }
 
-    public MethodBuilder appendMethod(String access, String returnType, String name, String... parameters) {
-        MethodBuilder res = new MethodBuilder(access, returnType, name, parameters);
-        methods.add(res);
+    public MethodBuilder createConstructor(String access, ArrayList<String> parameters) {
+        MethodBuilder res = new MethodBuilder(access, "", name, parameters);
+        methods.add(0, res);
         return res;
     }
 
