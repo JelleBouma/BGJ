@@ -27,7 +27,10 @@ public class Operation {
     }
 
     String getName() {
-        return action.mid.toString();
+        String name = action.mid.toString();
+        if (name.equals("EMPTY_OP"))
+            name = action.isSend() ? "send" : "receive";
+        return name;
     }
 
     ArrayList<String> getParameters() {

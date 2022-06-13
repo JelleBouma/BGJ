@@ -9,7 +9,7 @@ import scribblevercors.util.MethodBuilder;
 import scribblevercors.util.StringUtils;
 
 class Payload {
-    String name;
+    String name; // Has the class name of the payload if applicable, otherwise an empty string.
     boolean isSend;
     ArrayList<Arg> contents = new ArrayList<>();
 
