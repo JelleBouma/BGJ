@@ -13,7 +13,7 @@
  */
 
 
-module tutorial.adder.Adder;
+module adderpkg.Adder;
 
 
 data <java> "java.lang.Integer" from "rt.jar" as Int;

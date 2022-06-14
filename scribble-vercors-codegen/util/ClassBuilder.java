@@ -55,8 +55,10 @@ public class ClassBuilder {
     @Override
     public String toString() {
         StringBuilder res = new StringBuilder();
-        res.appendLine(0,"package " + pkg + ";");
-        res.skipLine(0);
+        if (!pkg.isBlank()) {
+            res.appendLine(0, "package " + pkg + ";");
+            res.skipLine(0);
+        }
         for (String imprt : imports)
             res.appendLine(0, "import " + imprt + ";");
         res.skipLine(0);

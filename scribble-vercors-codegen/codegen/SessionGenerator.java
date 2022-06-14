@@ -18,6 +18,7 @@ import java.util.Locale;
 public class SessionGenerator {
 
     static String pkg;
+    static String className;
     Job job;
     static Module main;
     Core core;
@@ -39,6 +40,7 @@ public class SessionGenerator {
             : corec.getEGraph(gpn, role).init;
         System.out.println(initialState.toAut());
         operations.fillPool(initialState);
+        processNames();
         String generatedClass = generateClass();
         System.out.println(generatedClass);
         try {
@@ -50,10 +52,16 @@ public class SessionGenerator {
         }
     }
 
+    public void processNames() {
+        className = StringUtils.capitalise(gpn.getSimpleName().toString());
+        ArrayList<String> pkgElements = new ArrayList<>(gpn.getElements());
+        pkgElements.remove(pkgElements.size() - 1); // remove the last two elements as these contain the protocol name
+        pkgElements.remove(pkgElements.size() - 1);
+        pkg = String.join(".", pkgElements).toLowerCase(Locale.ROOT);
+    }
+
     public String generateClass() {
-        String name = StringUtils.capitalise(gpn.getSimpleName().toString());
-        pkg = name.toLowerCase(Locale.ROOT);
-        classBuilder = new ClassBuilder(pkg, "public", name);
+        classBuilder = new ClassBuilder(pkg, "public", className);
         classBuilder.appendAttribute("", "int", "state");
         for (Operation operation : operations)
             addOperation(operation);

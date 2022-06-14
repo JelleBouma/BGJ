@@ -1,8 +1,6 @@
 package scribblevercors.codegen;
 
 import org.scribble.core.model.endpoint.actions.EAction;
-import org.scribble.core.type.name.DataName;
-import org.scribble.core.type.name.PayElemType;
 import scribblevercors.util.ArrayList;
 import scribblevercors.util.HashSet;
 
