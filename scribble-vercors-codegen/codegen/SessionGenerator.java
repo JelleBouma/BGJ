@@ -11,11 +11,10 @@ import org.scribble.job.Job;
 import org.scribble.util.ScribException;
 import scribblevercors.util.*;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.Locale;
 
-public class SessionGenerator {
+class SessionGenerator {
 
     static String pkg;
     static String className;
@@ -28,7 +27,7 @@ public class SessionGenerator {
     ClassBuilder classBuilder;
     OperationPool operations = new OperationPool();
 
-    public SessionGenerator(Job job, GProtoName gpn, Role role) throws ScribException {
+    SessionGenerator(Job job, GProtoName gpn, Role role) throws ScribException {
         this.job = job;
         core = job.getCore();
         this.gpn = gpn;
@@ -41,18 +40,24 @@ public class SessionGenerator {
         System.out.println(initialState.toAut());
         operations.fillPool(initialState);
         processNames();
-        String generatedClass = generateClass();
-        System.out.println(generatedClass);
-        try {
-            PrintWriter pw = new PrintWriter("Z:\\onderzoeknieuw\\output.java");
-            pw.print(generatedClass);
-            pw.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
-    public void processNames() {
+    HashMap<String, String> generateClasses(boolean verificationSkeleton) {
+        String dir = verificationSkeleton ? "verification-skeleton\\" : "src\\";
+        HashMap<String, String> res = new HashMap<>();
+        classBuilder = new ClassBuilder(pkg, "public", className);
+        if (verificationSkeleton)
+            classBuilder.appendAttribute("", "int", "state");
+        for (Operation operation : operations) {
+            addOperation(operation, verificationSkeleton);
+            if (!operation.payload.name.isEmpty())
+                res.putAll(operation.payload.getPayloadClass().mapContentsToFileName(dir));
+        }
+        res.putAll(classBuilder.mapContentsToFileName(dir));
+        return res;
+    }
+
+    void processNames() {
         className = StringUtils.capitalise(gpn.getSimpleName().toString());
         ArrayList<String> pkgElements = new ArrayList<>(gpn.getElements());
         pkgElements.remove(pkgElements.size() - 1); // remove the last two elements as these contain the protocol name
@@ -60,16 +65,19 @@ public class SessionGenerator {
         pkg = String.join(".", pkgElements).toLowerCase(Locale.ROOT);
     }
 
-    public String generateClass() {
-        classBuilder = new ClassBuilder(pkg, "public", className);
-        classBuilder.appendAttribute("", "int", "state");
-        for (Operation operation : operations)
-            addOperation(operation);
-        return classBuilder.toString();
+    void addOperation(Operation operation, boolean verificationSkeleton) {
+        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters());
+        if (verificationSkeleton)
+            addVerification(operation, method);
+        else
+            addExecutableCode(operation, method);
     }
 
-    void addOperation(Operation operation) {
-        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters());
+    void addExecutableCode(Operation operation, MethodBuilder method) {
+        // TODO
+    }
+
+    void addVerification(Operation operation, MethodBuilder method) {
         method.appendComment("@ context Perm(state, 1);");
         String nonNullCondition = operation.payload.name.equals("") ? "" : " && \\result != null";
         if (operation.transitions.size() == 1) {

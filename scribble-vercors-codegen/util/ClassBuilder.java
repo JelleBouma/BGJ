@@ -1,5 +1,7 @@
 package scribblevercors.util;
 
+import java.util.HashMap;
+
 public class ClassBuilder {
 
     private String pkg;
@@ -16,7 +18,7 @@ public class ClassBuilder {
     }
 
     public void appendAttribute(String access, String type, String name) {
-        attributes.add(type + " " + name + ";");
+        attributes.add(access + " " + type + " " + name + ";");
     }
 
     public void appendImport(String imprt) {
@@ -50,6 +52,12 @@ public class ClassBuilder {
             res.append(method.toString());
         }
         return res.toString();
+    }
+
+    public HashMap<String, String> mapContentsToFileName(String directory) {
+        HashMap<String, String> res = new HashMap<>();
+        res.put(directory + pkg.replace('.', '\\') + (pkg.isEmpty() ? "" : "\\") + name + ".java", toString());
+        return res;
     }
 
     @Override

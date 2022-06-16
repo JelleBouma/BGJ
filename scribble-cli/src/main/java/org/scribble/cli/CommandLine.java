@@ -52,7 +52,7 @@ import org.scribble.util.RuntimeScribException;
 import org.scribble.util.ScribException;
 import org.scribble.util.ScribParserException;
 import org.scribble.util.ScribUtil;
-import scribblevercors.codegen.SessionGenerator;
+import scribblevercors.codegen.ScribbleVercorsCodeGenerator;
 
 /**
  * A Scribble extension should override newCLFlags, newCLArgParser, newMain,
@@ -402,7 +402,6 @@ public class CommandLine
 				}
 				else
 				{
-					System.out.print(new SessionGenerator(job, fullname, self));
 					Map<String, String> out = jgen.generateStateChannelApi(fullname,
 							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG));
 					outputClasses(out, false);
@@ -410,6 +409,7 @@ public class CommandLine
 							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG), true);
 					outputClasses(skeletonOut, true);
 				}
+				outputClasses(ScribbleVercorsCodeGenerator.generateClasses(job, fullname, self), false);
 			}
 		}
 	}
@@ -476,7 +476,7 @@ public class CommandLine
 			String dir = getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0];
 			f = path -> { ScribUtil.handleLambdaScribbleException(() ->
 					{
-						String tmp = dir + (verCorsSkeleton ? "/verification-skeleton/" : "/") + path;
+						String tmp = dir + (verCorsSkeleton ? "\\verification-skeleton\\" : "\\") + path;
 						if (hasFlag(CLFlags.VERBOSE_FLAG))
 						{
 							System.out.println("[DEBUG] Writing to: " + tmp);
