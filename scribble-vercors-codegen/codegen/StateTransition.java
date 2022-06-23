@@ -1,18 +1,24 @@
 package scribblevercors.codegen;
 
+import org.scribble.core.model.endpoint.EState;
+import org.scribble.core.model.endpoint.EStateKind;
 import org.scribble.core.type.name.Role;
 
 import java.util.Objects;
 
 class StateTransition {
-    int originState;
-    int targetState;
+    EState originState;
+    EState targetState;
     Role targetRole;
 
-    StateTransition(int originState, int targetState, Role targetRole) {
+    StateTransition(EState originState, EState targetState, Role targetRole) {
         this.originState = originState;
         this.targetState = targetState;
         this.targetRole = targetRole;
+    }
+
+    boolean isExternalChoice() {
+        return originState.getStateKind() == EStateKind.POLY_RECIEVE;
     }
 
     @Override
@@ -20,11 +26,11 @@ class StateTransition {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         StateTransition that = (StateTransition) o;
-        return originState == that.originState && targetState == that.targetState && targetRole.equals(that.targetRole);
+        return originState.id == that.originState.id && targetState.id == that.targetState.id && targetRole.equals(that.targetRole);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(originState, targetState, targetRole);
+        return Objects.hash(originState.id, targetState.id, targetRole);
     }
 }

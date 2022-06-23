@@ -14,12 +14,13 @@ public class OperationPool extends ArrayList<Operation> {
         Set<EState> all = new HashSet<>();
         all.add(initialState);
         all.addAll(initialState.getReachableStates());
+        int counter = 0;
         for (EState s : all)
         {
             Iterator<EAction> as = s.getActions().iterator();
             Iterator<EState> succs = s.getSuccs().iterator();
             while (as.hasNext())
-                add(new Operation(s.id, as.next(), succs.next().id));
+                add(new Operation(counter++, s, as.next(), succs.next()));
         }
     }
 

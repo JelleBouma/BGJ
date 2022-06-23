@@ -18,17 +18,36 @@ public class ClassBuilder {
     }
 
     public void appendAttribute(String access, String type, String name) {
-        attributes.add(access + " " + type + " " + name + ";");
+        appendAttribute(access, type, name, false, false);
+    }
+
+    public void appendAttribute(String access, String type, String name, boolean statik, boolean finall) {
+        ArrayList<String> parts = new ArrayList<>(access);
+        if (statik)
+            parts.add("static");
+        if (finall)
+            parts.add("final");
+        parts.addAll(type, name);
+        parts.removeIf(String::isBlank);
+        attributes.add(String.join(" ", parts) + ";");
     }
 
     public void appendImport(String imprt) {
         imports.add(imprt);
     }
 
+    public MethodBuilder createConstructor(String access, String... parameters) {
+        return createConstructor(access, new ArrayList<>(parameters));
+    }
+
     public MethodBuilder createConstructor(String access, ArrayList<String> parameters) {
         MethodBuilder res = new MethodBuilder(access, "", name, parameters);
         methods.add(0, res);
         return res;
+    }
+
+    public MethodBuilder appendMethod(String access, String returnType, String name, String... parameters) {
+        return appendMethod(access, returnType, name, new ArrayList<>(parameters));
     }
 
     public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters) {
@@ -38,7 +57,7 @@ public class ClassBuilder {
     }
 
     private String buildIdentifier() {
-        return String.join(" ", access, "class", name);
+        return StringUtils.trimJoin(" ", access, "class", name);
     }
 
     private String buildBlock() {
