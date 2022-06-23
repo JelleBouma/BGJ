@@ -409,7 +409,7 @@ public class CommandLine
 							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG), true);
 					outputClasses(skeletonOut, true);
 				}
-				outputClasses(ScribbleVercorsCodeGenerator.generateClasses(job, fullname, self), false);
+				ScribbleVercorsCodeGenerator.generateFiles(job, fullname, self, getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0], getUniqueFlagArgs(CLFlags.VERCORS_DIR_FLAG)[0]);
 			}
 		}
 	}

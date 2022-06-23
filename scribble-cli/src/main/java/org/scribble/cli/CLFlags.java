@@ -42,6 +42,7 @@ public class CLFlags
 	public static final String AUT_FLAG = "-aut";
 	public static final String NO_VALIDATION_FLAG = "-novalid";
 	public static final String INLINE_MAIN_MOD_FLAG = "-inline";
+	public static final String VERCORS_DIR_FLAG = "-vercors";
 
 	// Non-unique flags
 	public static final String PROJECT_FLAG = "-project";
@@ -84,6 +85,9 @@ public class CLFlags
 		flags.put(INLINE_MAIN_MOD_FLAG, 
 				new CLFlag(INLINE_MAIN_MOD_FLAG, 1, true, false, false,
 						"Missing inline module: "));
+		flags.put(VERCORS_DIR_FLAG,
+				new CLFlag(VERCORS_DIR_FLAG, 1, true, false, false,
+						"Missing VerCors directory argument: "));
 
 		flags.put(JUNIT_FLAG, 
 				new CLFlag(JUNIT_FLAG, 0, true, false, false, "Duplicate flag: "));
