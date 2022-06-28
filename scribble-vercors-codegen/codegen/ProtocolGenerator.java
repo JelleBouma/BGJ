@@ -14,7 +14,7 @@ import scribblevercors.util.*;
 import java.util.HashMap;
 import java.util.Locale;
 
-class SessionGenerator {
+class ProtocolGenerator {
 
     static String pkg;
     static String className;
@@ -30,7 +30,7 @@ class SessionGenerator {
     HashSet<StateTransition> externalChoiceTransitions = new HashSet<>();
     boolean hasExternalChoice;
 
-    SessionGenerator(Job job, GProtoName gpn, Role role) throws ScribException {
+    ProtocolGenerator(Job job, GProtoName gpn, Role role) throws ScribException {
         this.job = job;
         core = job.getCore();
         this.gpn = gpn;

@@ -21,7 +21,7 @@ class Payload {
             int counter = 0;
             for (PayElemType<?> pt : action.payload.elems)
             {
-                String typeName = SessionGenerator.main.getTypeDeclChild((DataName) pt).getExtName();
+                String typeName = ProtocolGenerator.main.getTypeDeclChild((DataName) pt).getExtName();
                 addArg(typeName, "arg" + counter);
                 counter++;
             }
@@ -81,7 +81,7 @@ class Payload {
     }
 
     ClassBuilder getPayloadClass() {
-        ClassBuilder cb = new ClassBuilder(SessionGenerator.pkg, "public", name);
+        ClassBuilder cb = new ClassBuilder(ProtocolGenerator.pkg, "public", name);
         MethodBuilder constructor = cb.createConstructor("public", contents.convertAll(a -> a.type + " " + a.name));
         for (Arg arg : contents) {
             cb.appendAttribute("public", arg.type, arg.name);

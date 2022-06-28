@@ -3,7 +3,6 @@ package scribblevercors.codegen;
 import org.scribble.core.type.name.GProtoName;
 import org.scribble.core.type.name.Role;
 import org.scribble.job.Job;
-import org.scribble.util.Pair;
 import org.scribble.util.ScribException;
 import org.scribble.util.ScribUtil;
 
@@ -14,7 +13,7 @@ public class ScribbleVercorsCodeGenerator {
     private ScribbleVercorsCodeGenerator() {}
 
     public static void generateFiles(Job job, GProtoName gpn, Role role, String dir, String vercorsDir) throws ScribException {
-        SessionGenerator generator = new SessionGenerator(job, gpn, role);
+        ProtocolGenerator generator = new ProtocolGenerator(job, gpn, role);
         HashMap<String, String> files = generator.generateClasses(false);
         HashMap<String, String> verificationClasses = generator.generateClasses(true);
         files.putAll(generateBat(verificationClasses.keySet(), vercorsDir));
