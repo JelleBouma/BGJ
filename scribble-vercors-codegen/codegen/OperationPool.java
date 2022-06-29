@@ -2,9 +2,10 @@ package scribblevercors.codegen;
 
 import org.scribble.core.model.endpoint.EState;
 import org.scribble.core.model.endpoint.actions.EAction;
+import org.scribble.core.type.name.Role;
 import scribblevercors.util.ArrayList;
+import scribblevercors.util.HashSet;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -32,5 +33,14 @@ public class OperationPool extends ArrayList<Operation> {
                 return false;
             }
         return super.add(toBeAdded);
+    }
+
+    public HashSet<Role> getTargetRoles() {
+        HashSet<Role> res = new HashSet<>();
+        for (Operation op : this)
+            for (StateTransition st : op.transitions)
+                res.add(st.targetRole);
+        System.out.println(res);
+        return res;
     }
 }

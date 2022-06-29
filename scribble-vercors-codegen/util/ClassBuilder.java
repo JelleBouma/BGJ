@@ -5,14 +5,14 @@ import java.util.HashMap;
 public class ClassBuilder {
 
     private String pkg = "";
-    private HashSet<String> imports = new HashSet<>();
+    private ArrayList<String> imports = new ArrayList<>();
     private String access = "";
     private String name;
     private String extendsLine = "";
     private ArrayList<String> attributes = new ArrayList<>();
     private ArrayList<MethodBuilder> methods = new ArrayList<>();
     private ArrayList<ClassBuilder> inners = new ArrayList<>();
-    private boolean innerClass = false;
+    private int depth = 0;
 
     public ClassBuilder(String pkg, String access, String name) {
         this(pkg, access, name, "");
@@ -22,23 +22,35 @@ public class ClassBuilder {
         this.pkg = pkg;
         this.access = access;
         this.name = name;
-        this.extendsLine = " extends " + extending;
+        this.extendsLine = extending.isBlank() ? "" : "extends " + extending;
     }
 
-    ClassBuilder(String name, String extending) {
+    ClassBuilder(int depth, String name, String extending) {
         this("", "", name, extending);
-        innerClass = true;
+        this.depth = depth;
     }
 
     public void appendImport(String imprt) {
         imports.add(imprt);
     }
 
+    public void appendAttribute(String type, String name) {
+        appendAttribute("", type, name);
+    }
+
     public void appendAttribute(String access, String type, String name) {
         appendAttribute(access, type, name, false, false);
     }
 
+    public void appendAttribute(String access, String type, String name, String assignment) {
+        appendAttribute(access, type, name, assignment, false, false);
+    }
+
     public void appendAttribute(String access, String type, String name, boolean statik, boolean finall) {
+        appendAttribute(access, type, name, "", statik, finall);
+    }
+
+    public void appendAttribute(String access, String type, String name, String assignment, boolean statik, boolean finall) {
         ArrayList<String> parts = new ArrayList<>(access);
         if (statik)
             parts.add("static");
@@ -46,11 +58,13 @@ public class ClassBuilder {
             parts.add("final");
         parts.addAll(type, name);
         parts.removeIf(String::isBlank);
+        if (!assignment.isBlank())
+            parts.addAll("=", assignment);
         attributes.add(String.join(" ", parts) + ";");
     }
 
     public ClassBuilder appendInnerClass(String name, String extending) {
-        ClassBuilder res = new ClassBuilder(name, extending);
+        ClassBuilder res = new ClassBuilder(depth + 1, name, extending);
         inners.add(res);
         return res;
     }
@@ -60,7 +74,7 @@ public class ClassBuilder {
     }
 
     public MethodBuilder createConstructor(String access, ArrayList<String> parameters) {
-        MethodBuilder res = new MethodBuilder(access, "", name, parameters);
+        MethodBuilder res = new MethodBuilder(depth + 1, access, "", name, parameters);
         methods.add(0, res);
         return res;
     }
@@ -70,28 +84,28 @@ public class ClassBuilder {
     }
 
     public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters) {
-        MethodBuilder res = new MethodBuilder(access, returnType, name, parameters);
+        MethodBuilder res = new MethodBuilder(depth + 1, access, returnType, name, parameters);
         methods.add(res);
         return res;
     }
 
     String buildIdentifier() {
-        return StringUtils.trimJoin(" ", access, "class", name);
+        return StringUtils.trimJoin(" ", access, "class", name, extendsLine);
     }
 
     String buildBlock() {
         StringBuilder res = new StringBuilder();
         for (String attribute : attributes) // build attributes
-            res.appendLine(1, attribute);
+            res.appendLine(depth + 1, attribute);
         for (ClassBuilder inner : inners) { // build inner classes
-            res.skipLine(1);
-            res.appendLine(1, inner.buildIdentifier());
-            res.appendBlock(1, inner.buildBlock());
+            res.skipLine(depth + 1);
+            res.appendLine(depth + 1, inner.buildIdentifier());
+            res.appendBlock(depth + 1, inner.buildBlock());
         }
         for (MethodBuilder method : methods) { // build methods
-            res.skipLine(1);
+            res.skipLine(depth + 1);
             for (String comment : method.comments)
-                res.appendLine(1, comment);
+                res.appendLine(depth + 1, comment);
             res.append(method.toString());
         }
         return res.toString();
