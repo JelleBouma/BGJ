@@ -14,7 +14,6 @@ import scribblevercors.util.*;
 
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.stream.IntStream;
 
 class ProtocolGenerator {
 
@@ -71,17 +70,19 @@ class ProtocolGenerator {
         String dir = verificationSkeleton ? "verification-skeleton\\" : "src\\";
         HashMap<String, String> res = new HashMap<>();
         classBuilder = new ClassBuilder(pkg, "public", className);
-        if (!verificationSkeleton)
-            generateImports();
         generateAttributes(verificationSkeleton);
         ArrayList<String> constructorParams = new ArrayList<>("int port");
         if (isClient)
             constructorParams.add(0, "String host");
         generateConstructor(classBuilder.createConstructor("public", constructorParams, "Exception"), verificationSkeleton);
+        if (!verificationSkeleton) {
+            generateImports();
+            generateReceiver();
+        }
         if (hasExternalChoice)
-            addExternalChoiceReceive(verificationSkeleton);
+            generateExternalChoiceReceive(verificationSkeleton);
         for (Operation operation : operations) {
-            addOperation(operation, verificationSkeleton);
+            generateOperation(operation, verificationSkeleton);
             if (!operation.payload.name.isEmpty())
                 res.putAll(operation.payload.getPayloadClass().mapContentsToFileName(dir));
         }
@@ -92,6 +93,7 @@ class ProtocolGenerator {
     void generateImports() {
         classBuilder.appendImport("org.scribble.core.type.name.Op");
         classBuilder.appendImport("org.scribble.core.type.name.Role");
+        classBuilder.appendImport("org.scribble.runtime.message.ScribMessage");
         classBuilder.appendImport("org.scribble.runtime.session.MPSTEndpoint");
         classBuilder.appendImport("org.scribble.runtime.session.Session");
         classBuilder.appendImport("org.scribble.core.type.session.STypeFactory");
@@ -117,6 +119,10 @@ class ProtocolGenerator {
             for (Role r : allRoles)
                 classBuilder.appendAttribute("", "Role", r.toString(), "new Role(\"" + r + "\")");
             classBuilder.appendAttribute("MPSTEndpoint<Session, Role>", "endpoint");
+            if (hasExternalChoice) {
+                classBuilder.appendAttribute("private", "boolean", "choiceMade", "false");
+                classBuilder.appendAttribute("private", "ScribMessage", "chosenMessage");
+            }
         }
         for (Operation operation : externalChoices)
             classBuilder.appendAttribute("public", "int", "EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT), false, true);
@@ -157,10 +163,9 @@ class ProtocolGenerator {
         for (Operation operation : externalChoices)
             constructor.appendStatement("EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT) + " = " + operation.id + ";");
     }
-
-    void addExternalChoiceReceive(boolean verificationSkeleton) {
+    void generateExternalChoiceReceive(boolean verificationSkeleton) {
+        MethodBuilder method = classBuilder.appendMethod("public", "int", "receiveExternalChoice", new ArrayList<>(), "Exception");
         if (verificationSkeleton) {
-            MethodBuilder method = classBuilder.appendMethod("public", "int", "receiveExternalChoice");
             method.appendComment("@ context Perm(state, 1) ** Perm(choice, 1);");
             HashSet<String> startingStates = externalChoiceTransitions.convertAll(t -> "state == " + t.originState.id);
             method.appendComment("@ requires choice == -1 && (" + String.join(" || ", startingStates) +");");
@@ -168,36 +173,60 @@ class ProtocolGenerator {
             method.appendComment("@ ensures (" + String.join(" || ", results) + ") && \\old(state) == state && \\result == choice;");
             method.appendStatement("choice = " + externalChoices.first().id + ";");
             method.appendStatement("return " + externalChoices.first().id + ";");
+        } else {
+            method.appendStatement("chosenMessage = receiveScribMessage(" + externalChoices.first().action.peer + ");");
+            method.appendStatement("String choice = chosenMessage.op.getLastElement();");
+            method.appendStatement("choiceMade = true;");
+            for (int cc = 0; cc < externalChoices.size(); cc++) {
+                Operation choice = externalChoices.get(cc);
+                String controlStatement = (cc > 0 ? "else " : "") + (cc < externalChoices.size() - 1 ? "if (choice.equals(\"" + choice.getName() + "\"))" : "");
+                ControlBuilder controlBuilder = method.appendControl(controlStatement);
+                controlBuilder.appendStatement("return " + choice.id + ";");
+            }
         }
     }
 
-    void addOperation(Operation operation, boolean verificationSkeleton) {
-        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters(), "Exception");
-        if (verificationSkeleton)
-            addVerification(operation, method);
-        else
-            addExecutableCode(operation, method);
+    void generateReceiver() {
+        MethodBuilder method = classBuilder.appendMethod("private", "ScribMessage", "receiveScribMessage", new ArrayList<>("Role role"), "Exception");
+        if (hasExternalChoice) {
+            ControlBuilder ifChoiceMade = method.appendControl("if (choiceMade)");
+            ifChoiceMade.appendStatement("choiceMade = false;");
+            ifChoiceMade.appendStatement("return chosenMessage;");
+        }
+        method.appendStatement("return new ReceiveSocket<Session, Role>(endpoint).readScribMessage(role);");
     }
 
-    void addExecutableCode(Operation operation, MethodBuilder method) {
-        for (StateTransition transition : operation.transitions) // FIXME: problematic when an operation has multiple state transitions.
+    void generateOperation(Operation operation, boolean verificationSkeleton) {
+        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters(), "Exception");
+        if (verificationSkeleton)
+            generateVerification(operation, method);
+        else
+            generateExecutableCode(operation, method);
+    }
+
+    void generateExecutableCode(Operation operation, MethodBuilder method) {
+        for (StateTransition transition : operation.transitions) { // FIXME: problematic when an operation has multiple state transitions.
             if (operation.payload.isSend) {
-                ArrayList<String> parameters = new ArrayList<>(transition.targetRole.toString(), "Op.EMPTY_OP");
+                ArrayList<String> parameters = new ArrayList<>(transition.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
                 parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
                 method.appendStatement("new OutputSocket<Session, Role>(endpoint).writeScribMessage(" + String.join(", ", parameters) + ");");
-            }
-            else if (operation.getReturnType().equals("void"))
-                method.appendStatement("new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ");");
+            } else if (operation.getReturnType().equals("void"))
+                method.appendStatement("receiveScribMessage(" + transition.targetRole + ");");
             else if (operation.payload.name.isBlank())
                 method.appendStatement("return (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ").payload[0]);");
             else {
-                method.appendStatement("Object[] payload = new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ").payload;");
+                method.appendStatement("Object[] payload = receiveScribMessage(" + transition.targetRole + ").payload;");
                 ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");
                 method.appendStatement("return new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
             }
+            if (transition.targetState.isTerminal()) {
+                method.appendStatement("endpoint.setCompleted();");
+                method.appendStatement("endpoint.close();");
+            }
+        }
     }
 
-    void addVerification(Operation operation, MethodBuilder method) {
+    void generateVerification(Operation operation, MethodBuilder method) {
         method.appendComment("@ context Perm(state, 1)" + (operation.isExternalChoice() ? " ** Perm(choice, 1);" : ";"));
         String nonNullCondition = operation.payload.name.equals("") ? "" : " && \\result != null";
         String choiceRequirement = operation.isExternalChoice() ? " && choice == " + operation.id : "";
