@@ -79,12 +79,23 @@ public class ClassBuilder {
         return res;
     }
 
+    public MethodBuilder createConstructor(String access, ArrayList<String> parameters, String throwing) {
+        MethodBuilder res = new MethodBuilder(depth + 1, access, "", name, parameters, throwing);
+        methods.add(0, res);
+        return res;
+    }
+
+
     public MethodBuilder appendMethod(String access, String returnType, String name, String... parameters) {
         return appendMethod(access, returnType, name, new ArrayList<>(parameters));
     }
 
     public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters) {
-        MethodBuilder res = new MethodBuilder(depth + 1, access, returnType, name, parameters);
+        return appendMethod(access, returnType, name, parameters, "");
+    }
+
+    public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters, String throwing) {
+        MethodBuilder res = new MethodBuilder(depth + 1, access, returnType, name, parameters, throwing);
         methods.add(res);
         return res;
     }

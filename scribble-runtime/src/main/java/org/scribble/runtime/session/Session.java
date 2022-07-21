@@ -24,7 +24,7 @@ import org.scribble.core.type.name.Role;
 import org.scribble.main.ScribRuntimeException;
 import org.scribble.util.ScribException;
 
-public abstract class Session
+public class Session
 {
 	private static final Map<Integer, Session> sessions = new HashMap<Integer, Session>();
 
@@ -33,23 +33,25 @@ public abstract class Session
 	public final List<String> impath;
 	public final String modpath;
 	public final GProtoName proto;
+
+	List<Role> roles;
 	
 	//private final Map<Role, MPSTEndpoint<?, ?>> endpoints = new HashMap<>();  // Only for local endpoints
 	private final Map<Role, SessionEndpoint<?, ?>> endpoints = new HashMap<>();  // Only for local endpoints
 
-	public Session(int id, List<String> impath, String modpath, GProtoName proto)
+	public Session(int id, List<String> impath, String modpath, GProtoName proto, List<Role> roles)
 	{
 		this.id = id;
 		this.impath = impath;
 		this.modpath = modpath;
 		this.proto = proto;
-		
+		this.roles = roles;
 		Session.sessions.put(id, this);
 	}
 
-	public Session(List<String> importPath, String source, GProtoName proto)
+	public Session(List<String> importPath, String source, GProtoName proto, List<Role> roles)
 	{
-		this(getFreshId(), importPath, source, proto);
+		this(getFreshId(), importPath, source, proto, roles);
 	}
 
 	/*// Client side
@@ -162,5 +164,7 @@ public abstract class Session
 		Session.sessions.remove(this.id);
 	}
 	
-	public abstract List<Role> getRoles();
+	public List<Role> getRoles() {
+		return roles;
+	}
 }

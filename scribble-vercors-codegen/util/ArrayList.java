@@ -1,6 +1,8 @@
 package scribblevercors.util;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -25,6 +27,27 @@ public class ArrayList<E> extends java.util.ArrayList<E> {
      */
     public <T> ArrayList<T> convertAll(Function<E, T> convertor) {
         return stream().map(convertor).collect(Collectors.toCollection(ArrayList<T>::new));
+    }
+
+    /**
+     * A filter which does not modify the input lists, but returns a new list where each element is the result of a specified function on 2 input lists.
+     * The element at index x (ranged from 0 to list size - 1) in the returned list will be the result of the convertor function applied on elements x of the input lists.
+     * @param combiner The combiner function which will be applied on each element of the input lists.
+     * @param <T> The return type, can be any type.
+     * @return A new list where each element is the result of the combining function.
+     */
+    public <R, T> ArrayList<T> combineAll(List<R> list, BiFunction<E, R, T> combiner) {
+        ArrayList<T> res = new ArrayList<>();
+        for (int ii = 0; ii < this.size() && ii < list.size(); ii++)
+            res.add(combiner.apply(this.get(ii), list.get(ii)));
+        return res;
+    }
+
+    public static ArrayList<Integer> range(int start, int end) {
+        ArrayList<Integer> res = new ArrayList<>();
+        for (int ii = start; ii < end; ii++)
+            res.add(ii);
+        return res;
     }
 
     /**

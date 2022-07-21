@@ -14,6 +14,7 @@ import scribblevercors.util.*;
 
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.stream.IntStream;
 
 class ProtocolGenerator {
 
@@ -59,7 +60,7 @@ class ProtocolGenerator {
     }
 
     void processNames() {
-        className = StringUtils.capitalise(gpn.getSimpleName().toString());
+        className = StringUtils.capitalise(gpn.getSimpleName().toString()) + StringUtils.capitalise(role.toString());
         ArrayList<String> pkgElements = new ArrayList<>(gpn.getElements());
         pkgElements.remove(pkgElements.size() - 1); // remove the last two elements as these contain the protocol name
         pkgElements.remove(pkgElements.size() - 1);
@@ -70,15 +71,13 @@ class ProtocolGenerator {
         String dir = verificationSkeleton ? "verification-skeleton\\" : "src\\";
         HashMap<String, String> res = new HashMap<>();
         classBuilder = new ClassBuilder(pkg, "public", className);
-        if (!verificationSkeleton) {
+        if (!verificationSkeleton)
             generateImports();
-            generateSession();
-        }
         generateAttributes(verificationSkeleton);
         ArrayList<String> constructorParams = new ArrayList<>("int port");
         if (isClient)
             constructorParams.add(0, "String host");
-        generateConstructor(classBuilder.createConstructor("public", constructorParams), verificationSkeleton);
+        generateConstructor(classBuilder.createConstructor("public", constructorParams, "Exception"), verificationSkeleton);
         if (hasExternalChoice)
             addExternalChoiceReceive(verificationSkeleton);
         for (Operation operation : operations) {
@@ -91,6 +90,7 @@ class ProtocolGenerator {
     }
 
     void generateImports() {
+        classBuilder.appendImport("org.scribble.core.type.name.Op");
         classBuilder.appendImport("org.scribble.core.type.name.Role");
         classBuilder.appendImport("org.scribble.runtime.session.MPSTEndpoint");
         classBuilder.appendImport("org.scribble.runtime.session.Session");
@@ -98,6 +98,10 @@ class ProtocolGenerator {
         classBuilder.appendImport("org.scribble.main.ScribRuntimeException");
         classBuilder.appendImport("org.scribble.runtime.message.ObjectStreamFormatter");
         classBuilder.appendImport("org.scribble.runtime.net.SocketChannelEndpoint");
+        classBuilder.appendImport("org.scribble.runtime.statechans.OutputSocket");
+        classBuilder.appendImport("org.scribble.runtime.statechans.ReceiveSocket");
+        classBuilder.appendImport("org.scribble.runtime.net.ScribServerSocket");
+        classBuilder.appendImport("org.scribble.runtime.net.SocketChannelServer");
         classBuilder.appendImport("java.io.IOException");
         classBuilder.appendImport("java.util.LinkedList");
         classBuilder.appendImport("java.util.List");
@@ -118,17 +122,6 @@ class ProtocolGenerator {
             classBuilder.appendAttribute("public", "int", "EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT), false, true);
     }
 
-    void generateSession() {
-        ClassBuilder session = classBuilder.appendInnerClass(className + "Session", "Session");
-        MethodBuilder constructor = session.createConstructor("public");
-        constructor.appendStatement("super(new LinkedList<>(), \"getSource\", STypeFactory.parseGlobalProtocolName(\"" + gpn + "\"));");
-        MethodBuilder getRoles = session.appendMethod("public", "List<Role>", "getRoles");
-        getRoles.appendStatement("LinkedList<Role> res = new LinkedList<>();");
-        for (Role r : allRoles)
-            getRoles.appendStatement("res.add(" + r + ");");
-        getRoles.appendStatement("return res;");
-    }
-
     void generateConstructor(MethodBuilder constructor, boolean verificationSkeleton) {
         if (verificationSkeleton) {
             ArrayList<String> perms = new ArrayList<>("Perm(state, 1)");
@@ -147,17 +140,19 @@ class ProtocolGenerator {
             constructor.appendComment("@ ensures " + String.join(" && ", ensures) + ";");
         }
         else {
-            ControlBuilder trying = constructor.appendControl("try");
+            constructor.appendStatement("LinkedList<Role> roles = new LinkedList<>();");
+            for (Role r : allRoles)
+                constructor.appendStatement("roles.add(" + r + ");");
+            constructor.appendStatement("Session session = new Session(new LinkedList<>(), \"getSource\", STypeFactory.parseGlobalProtocolName(\"" + gpn + "\"), roles);");
             if (!isClient)
-                trying.appendStatement("ScribServerSocket ss = new SocketChannelServer(port);");
-            trying.appendStatement("endpoint = new MPSTEndpoint<>(new " + className + "Session(), " + role + ", new ObjectStreamFormatter());");
+                constructor.appendStatement("ScribServerSocket ss = new SocketChannelServer(port);");
+            constructor.appendStatement("endpoint = new MPSTEndpoint<>(session, " + role + ", new ObjectStreamFormatter());");
             for (Role target : targetRoles)
                 if (isClient)
-                    trying.appendStatement("endpoint.request(" + target + ", SocketChannelEndpoint::new, host, port);");
+                    constructor.appendStatement("endpoint.request(" + target + ", SocketChannelEndpoint::new, host, port);");
                 else
-                    trying.appendStatement("server.accept(ss, " + target + ");");
-            ControlBuilder catching = constructor.appendControl("catch (IOException | ScribRuntimeException e)");
-            catching.appendStatement("e.printStackTrace();");
+                    constructor.appendStatement("endpoint.accept(ss, " + target + ");");
+            constructor.appendStatement("endpoint.init();");
         }
         for (Operation operation : externalChoices)
             constructor.appendStatement("EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT) + " = " + operation.id + ";");
@@ -177,7 +172,7 @@ class ProtocolGenerator {
     }
 
     void addOperation(Operation operation, boolean verificationSkeleton) {
-        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters());
+        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters(), "Exception");
         if (verificationSkeleton)
             addVerification(operation, method);
         else
@@ -185,7 +180,21 @@ class ProtocolGenerator {
     }
 
     void addExecutableCode(Operation operation, MethodBuilder method) {
-        // TODO
+        for (StateTransition transition : operation.transitions) // FIXME: problematic when an operation has multiple state transitions.
+            if (operation.payload.isSend) {
+                ArrayList<String> parameters = new ArrayList<>(transition.targetRole.toString(), "Op.EMPTY_OP");
+                parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
+                method.appendStatement("new OutputSocket<Session, Role>(endpoint).writeScribMessage(" + String.join(", ", parameters) + ");");
+            }
+            else if (operation.getReturnType().equals("void"))
+                method.appendStatement("new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ");");
+            else if (operation.payload.name.isBlank())
+                method.appendStatement("return (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ").payload[0]);");
+            else {
+                method.appendStatement("Object[] payload = new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ").payload;");
+                ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");
+                method.appendStatement("return new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
+            }
     }
 
     void addVerification(Operation operation, MethodBuilder method) {

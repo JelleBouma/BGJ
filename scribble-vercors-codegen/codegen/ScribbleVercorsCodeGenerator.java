@@ -23,7 +23,7 @@ public class ScribbleVercorsCodeGenerator {
 
     private static HashMap<String, String> generateBat(Set<String> classFiles, String vercorsDir) {
         HashMap<String, String> res = new HashMap<>();
-        res.put("verify.bat", "start \"Verifying Scribble Protocol\" " + vercorsDir + " --silicon " + String.join(" ", classFiles));
+        res.put("verify.bat", "start \"Verifying Scribble Protocol\" " + vercorsDir + "/bin/vercors --silicon " + String.join(" ", classFiles));
         return res;
     }
 

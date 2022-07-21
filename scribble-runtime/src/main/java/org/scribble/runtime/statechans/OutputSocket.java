@@ -26,15 +26,15 @@ import org.scribble.runtime.session.MPSTEndpoint;
 import org.scribble.runtime.session.Session;
 import org.scribble.runtime.session.SessionEndpoint;
 
-public abstract class OutputSocket<S extends Session, R extends Role> extends LinearSocket<S, R>
+public class OutputSocket<S extends Session, R extends Role> extends LinearSocket<S, R>
 {
 	//protected OutputSocket(MPSTEndpoint<S, R> ep)
-	protected OutputSocket(SessionEndpoint<S, R> ep)
+	public OutputSocket(SessionEndpoint<S, R> ep)
 	{
 		super(ep);
 	}
 
-	protected void writeScribMessage(Role peer, Op op, Object... payload) throws IOException, ScribRuntimeException
+	public void writeScribMessage(Role peer, Op op, Object... payload) throws IOException, ScribRuntimeException
 	{
 		writeScribMessage(peer, new ScribMessage(op, payload));
 	}

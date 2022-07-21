@@ -23,16 +23,16 @@ import org.scribble.runtime.message.ScribMessage;
 import org.scribble.runtime.session.Session;
 import org.scribble.runtime.session.SessionEndpoint;
 
-public abstract class ReceiveSocket<S extends Session, R extends Role> extends LinearSocket<S, R>
+public class ReceiveSocket<S extends Session, R extends Role> extends LinearSocket<S, R>
 {
 	private CompletableFuture<ScribMessage> fut;
 
-	protected ReceiveSocket(SessionEndpoint<S, R> se)
+	public ReceiveSocket(SessionEndpoint<S, R> se)
 	{
 		super(se);
 	}
 
-	protected ScribMessage readScribMessage(Role peer) throws ClassNotFoundException, IOException, ScribRuntimeException
+	public ScribMessage readScribMessage(Role peer) throws ClassNotFoundException, IOException, ScribRuntimeException
 	{
 		try
 		{
