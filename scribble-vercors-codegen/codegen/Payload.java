@@ -73,11 +73,15 @@ class Payload {
     }
 
     String getDefaultReturnStatement() {
-        return getReturnStatement(contents.convertAll(a -> a.defaultValue));
+        return getReturnStatement(getDefaultValues());
     }
 
     ArrayList<String> getParameters() {
         return isSend ? contents.convertAll(a -> a.type + " " + a.name) : new ArrayList<>();
+    }
+
+    ArrayList<String> getDefaultValues() {
+        return contents.convertAll(a -> a.defaultValue);
     }
 
     ClassBuilder getPayloadClass() {

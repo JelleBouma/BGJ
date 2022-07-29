@@ -1,6 +1,7 @@
 package scribblevercors.util;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -40,6 +41,18 @@ public class HashSet<E> extends java.util.HashSet<E> {
     }
 
     /**
+     * @param predicate The predicate to check for.
+     * @return An element for which the predicate evaluates to true.
+     * If the predicate is true for no element, null is returned instead.
+     */
+    public E getMatch(Predicate<E> predicate) {
+        for (E e : this)
+            if (predicate.test(e))
+                return e;
+        return null;
+    }
+
+    /**
      * Checks if any element returns true for the predicate.
      * @param predicate the predicate to check.
      * @return true if there is an element that returns true for the predicate, false otherwise.
@@ -47,6 +60,17 @@ public class HashSet<E> extends java.util.HashSet<E> {
     public boolean anyMatch(Predicate<E> predicate) {
         for (E e : this)
             if (predicate.test(e))
+                return true;
+        return false;
+    }
+
+    /**
+     * Checks if any element from the input is present in this HashSet.
+     * @return true if there is an element in the input collection which is equal to an element in this HashSet.
+     */
+    public boolean containsAny(Collection<E> collection) {
+        for (E e : collection)
+            if (contains(e))
                 return true;
         return false;
     }

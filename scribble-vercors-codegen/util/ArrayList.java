@@ -64,6 +64,18 @@ public class ArrayList<E> extends java.util.ArrayList<E> {
     }
 
     /**
+     * @param predicate The predicate to check for.
+     * @return The first element (counting up from index 0) for which the predicate evaluates to true.
+     * If the predicate is true for no element, null is returned instead.
+     */
+    public E firstMatch(Predicate<E> predicate) {
+        for (E e : this)
+            if (predicate.test(e))
+                return e;
+        return null;
+    }
+
+    /**
      * Checks if any element returns true for the predicate.
      * @param predicate the predicate to check.
      * @return true if there is an element that returns true for the predicate, false otherwise.

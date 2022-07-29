@@ -30,6 +30,7 @@ class ProtocolGenerator {
     ClassBuilder classBuilder;
     OperationPool operations = new OperationPool();
     ArrayList<Operation> externalChoices;
+    ArrayList<StateTransition> transitions = new ArrayList<>();
     HashSet<StateTransition> externalChoiceTransitions = new HashSet<>();
     boolean hasExternalChoice;
     boolean isClient;
@@ -47,6 +48,8 @@ class ProtocolGenerator {
         isClient = initialState.getStateKind() == EStateKind.OUTPUT;
         System.out.println(initialState.toAut());
         operations.fillPool(initialState);
+        for (Operation operation : operations)
+            transitions.addAll(operation.transitions);
         targetRoles = operations.getTargetRoles();
         allRoles = new HashSet<>();
         allRoles.addAll(targetRoles);
@@ -88,6 +91,54 @@ class ProtocolGenerator {
         }
         res.putAll(classBuilder.mapContentsToFileName(dir));
         return res;
+    }
+
+    HashMap<String, String> generateMainClass() {
+        ClassBuilder mainClass = new ClassBuilder(pkg, "public", className + "Main");
+        mainClass.appendAttribute("", className, StringUtils.decapitalise(className), true, false);
+        MethodBuilder mainMethod = mainClass.appendMethod("public", "void", "main", new ArrayList<>("String[] args"), "Exception");
+        mainMethod.appendComment("@ requires Perm(" + StringUtils.decapitalise(className) + ", 1);");
+        mainMethod.appendComment("@ requires args != null && args.length > 0;");
+        mainMethod.appendComment("@ requires Perm(args[0], 1);");
+        mainMethod.appendStatement("setup(args[0]);");
+        mainMethod.appendStatement("run();");
+        MethodBuilder setup = mainClass.appendMethod("public", "void", "setup", new ArrayList<>("String host"), "Exception");
+        setup.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
+        setup.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
+        setup.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
+        setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + "(host, 8888);");
+        MethodBuilder choose = mainClass.appendMethod("public", "int", "choose");
+        choose.appendStatement("return 0;");
+        MethodBuilder run = mainClass.appendMethod("public", "void", "run", new ArrayList<>(), "Exception");
+        run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
+        run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
+        run.appendComment("@ requires " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
+        run.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + transitions.firstMatch(t -> t.targetState.isTerminal()).targetState.id + ";");
+        generateRunner(run, initialState);
+        return mainClass.mapContentsToFileName("src\\");
+    }
+
+    void generateRunner(ControlBuilder control, EState state) {
+        ArrayList<StateTransition> enabledTransitions = transitions.filter(t -> t.originState == state);
+        ArrayList<Operation> enabledOperations = operations.filter(o -> o.transitions.containsAny(enabledTransitions));
+        if (enabledOperations.size() > 1)
+            for (int oo = 0; oo < enabledOperations.size(); oo++) {
+                Operation op = enabledOperations.get(oo);
+                ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (choose() == " + oo + ")"));
+                String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
+                choice.appendStatement(StringUtils.decapitalise(className) + "." + StringUtils.decapitalise(op.getName()) + "(" + params + ");");
+                generateRunner(choice, op.transitions.getMatch(t -> t.originState == state).targetState);
+            }
+        else if (enabledOperations.size() == 1) {
+            Operation op = enabledOperations.first();
+            String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
+            control.appendStatement(StringUtils.decapitalise(className) + "." + StringUtils.decapitalise(op.getName()) + "(" + params + ");");
+            EState targetState = enabledTransitions.first().targetState;
+            if (targetState.id == initialState.id)
+                control.appendStatement("run();");
+            else
+                generateRunner(control, targetState);
+        }
     }
 
     void generateImports() {
