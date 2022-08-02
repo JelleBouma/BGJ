@@ -9,8 +9,8 @@ import org.scribble.util.ScribUtil;
 import java.util.HashMap;
 import java.util.Set;
 
-public class ScribbleVercorsCodeGenerator {
-    private ScribbleVercorsCodeGenerator() {}
+public class ScribbleVerCorsCodeGenerator {
+    private ScribbleVerCorsCodeGenerator() {}
 
     public static void generateFiles(Job job, GProtoName gpn, Role role, String dir, String vercorsDir) throws ScribException {
         ProtocolGenerator generator = new ProtocolGenerator(job, gpn, role);

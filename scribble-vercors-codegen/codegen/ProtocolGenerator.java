@@ -98,16 +98,20 @@ class ProtocolGenerator {
         mainClass.appendAttribute("", className, StringUtils.decapitalise(className), true, false);
         MethodBuilder mainMethod = mainClass.appendMethod("public", "void", "main", new ArrayList<>("String[] args"), "Exception");
         mainMethod.appendComment("@ requires Perm(" + StringUtils.decapitalise(className) + ", 1);");
-        mainMethod.appendComment("@ requires args != null && args.length > 0;");
-        mainMethod.appendComment("@ requires Perm(args[0], 1);");
-        mainMethod.appendStatement("setup(args[0]);");
+        if (isClient) {
+            mainMethod.appendComment("@ requires args != null && args.length > 0;");
+            mainMethod.appendComment("@ requires Perm(args[0], 1);");
+            mainMethod.appendStatement("setup(args[0]);");
+        }
+        else
+            mainMethod.appendStatement("setup();");
         mainMethod.appendStatement("run();");
-        MethodBuilder setup = mainClass.appendMethod("public", "void", "setup", new ArrayList<>("String host"), "Exception");
+        MethodBuilder setup = mainClass.appendMethod("public", "void", "setup", isClient ? new ArrayList<>("String host") : new ArrayList<>(), "Exception");
         setup.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
-        setup.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
+        setup.appendComment("@ ensures Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
         setup.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
-        setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + "(host, 8888);");
-        MethodBuilder choose = mainClass.appendMethod("public", "int", "choose");
+        setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + (isClient ? "(host, " : "(") + "8888);");
+        MethodBuilder choose = mainClass.appendMethod("public", "int", "choose"); // only needed when internal choice is present, TODO: detect presence of internal choice
         choose.appendStatement("return 0;");
         MethodBuilder run = mainClass.appendMethod("public", "void", "run", new ArrayList<>(), "Exception");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
@@ -124,10 +128,14 @@ class ProtocolGenerator {
         if (enabledOperations.size() > 1)
             for (int oo = 0; oo < enabledOperations.size(); oo++) {
                 Operation op = enabledOperations.get(oo);
-                ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (choose() == " + oo + ")"));
+                StateTransition transition = op.transitions.getMatch(t -> t.originState == state);
+                String option = transition.isExternalChoice() ?
+                    (StringUtils.decapitalise(className) + ".receiveExternalChoice() == " + StringUtils.decapitalise(className) + ".EXTERNAL_CHOICE_" + op.getName().toUpperCase(Locale.ROOT)) :
+                    ("choose() == " + oo);
+                ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (" + option + ")"));
                 String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
                 choice.appendStatement(StringUtils.decapitalise(className) + "." + StringUtils.decapitalise(op.getName()) + "(" + params + ");");
-                generateRunner(choice, op.transitions.getMatch(t -> t.originState == state).targetState);
+                generateRunner(choice, transition.targetState);
             }
         else if (enabledOperations.size() == 1) {
             Operation op = enabledOperations.first();
@@ -256,24 +264,23 @@ class ProtocolGenerator {
     }
 
     void generateExecutableCode(Operation operation, MethodBuilder method) {
-        for (StateTransition transition : operation.transitions) { // FIXME: problematic when an operation has multiple state transitions.
-            if (operation.payload.isSend) {
-                ArrayList<String> parameters = new ArrayList<>(transition.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
-                parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
-                method.appendStatement("new OutputSocket<Session, Role>(endpoint).writeScribMessage(" + String.join(", ", parameters) + ");");
-            } else if (operation.getReturnType().equals("void"))
-                method.appendStatement("receiveScribMessage(" + transition.targetRole + ");");
-            else if (operation.payload.name.isBlank())
-                method.appendStatement("return (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ").payload[0]);");
-            else {
-                method.appendStatement("Object[] payload = receiveScribMessage(" + transition.targetRole + ").payload;");
-                ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");
-                method.appendStatement("return new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
-            }
-            if (transition.targetState.isTerminal()) {
-                method.appendStatement("endpoint.setCompleted();");
-                method.appendStatement("endpoint.close();");
-            }
+        StateTransition transition = operation.transitions.getMatch(t -> true);
+        if (operation.payload.isSend) {
+            ArrayList<String> parameters = new ArrayList<>(transition.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
+            parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
+            method.appendStatement("new OutputSocket<Session, Role>(endpoint).writeScribMessage(" + String.join(", ", parameters) + ");");
+        } else if (operation.getReturnType().equals("void"))
+            method.appendStatement("receiveScribMessage(" + transition.targetRole + ");");
+        else if (operation.payload.name.isBlank())
+            method.appendStatement("return (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ").payload[0]);");
+        else {
+            method.appendStatement("Object[] payload = receiveScribMessage(" + transition.targetRole + ").payload;");
+            ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");
+            method.appendStatement("return new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
+        }
+        if (transition.targetState.isTerminal()) {
+            method.appendStatement("endpoint.setCompleted();");
+            method.appendStatement("endpoint.close();");
         }
     }
 

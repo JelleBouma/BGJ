@@ -52,7 +52,7 @@ import org.scribble.util.RuntimeScribException;
 import org.scribble.util.ScribException;
 import org.scribble.util.ScribParserException;
 import org.scribble.util.ScribUtil;
-import scribblevercors.codegen.ScribbleVercorsCodeGenerator;
+import scribblevercors.codegen.ScribbleVerCorsCodeGenerator;
 
 /**
  * A Scribble extension should override newCLFlags, newCLArgParser, newMain,
@@ -409,7 +409,7 @@ public class CommandLine
 							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG), true);
 					outputClasses(skeletonOut, true);
 				}
-				ScribbleVercorsCodeGenerator.generateFiles(job, fullname, self, getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0], getUniqueFlagArgs(CLFlags.VERCORS_DIR_FLAG)[0]);
+				ScribbleVerCorsCodeGenerator.generateFiles(job, fullname, self, getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0], getUniqueFlagArgs(CLFlags.VERCORS_DIR_FLAG)[0]);
 			}
 		}
 	}
