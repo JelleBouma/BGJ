@@ -96,7 +96,7 @@ class ProtocolGenerator {
     HashMap<String, String> generateMainClass() {
         ClassBuilder mainClass = new ClassBuilder(pkg, "public", className + "Main");
         mainClass.appendAttribute("", className, StringUtils.decapitalise(className), true, false);
-        MethodBuilder mainMethod = mainClass.appendMethod("public", "void", "main", new ArrayList<>("String[] args"), "Exception");
+        MethodBuilder mainMethod = mainClass.appendMethod("public", true, "void", "main", new ArrayList<>("String[] args"), "Exception");
         mainMethod.appendComment("@ requires Perm(" + StringUtils.decapitalise(className) + ", 1);");
         if (isClient) {
             mainMethod.appendComment("@ requires args != null && args.length > 0;");
@@ -106,14 +106,14 @@ class ProtocolGenerator {
         else
             mainMethod.appendStatement("setup();");
         mainMethod.appendStatement("run();");
-        MethodBuilder setup = mainClass.appendMethod("public", "void", "setup", isClient ? new ArrayList<>("String host") : new ArrayList<>(), "Exception");
+        MethodBuilder setup = mainClass.appendMethod("public", true, "void", "setup", isClient ? new ArrayList<>("String host") : new ArrayList<>(), "Exception");
         setup.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
         setup.appendComment("@ ensures Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
         setup.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
         setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + (isClient ? "(host, " : "(") + "8888);");
-        MethodBuilder choose = mainClass.appendMethod("public", "int", "choose"); // only needed when internal choice is present, TODO: detect presence of internal choice
+        MethodBuilder choose = mainClass.appendMethod("public", true, "int", "choose", new ArrayList<>(), ""); // only needed when internal choice is present, TODO: detect presence of internal choice
         choose.appendStatement("return 0;");
-        MethodBuilder run = mainClass.appendMethod("public", "void", "run", new ArrayList<>(), "Exception");
+        MethodBuilder run = mainClass.appendMethod("public", true, "void", "run", new ArrayList<>(), "Exception");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
         run.appendComment("@ requires " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");

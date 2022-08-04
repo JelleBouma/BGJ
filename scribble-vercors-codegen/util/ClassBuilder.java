@@ -95,7 +95,11 @@ public class ClassBuilder {
     }
 
     public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters, String throwing) {
-        MethodBuilder res = new MethodBuilder(depth + 1, access, returnType, name, parameters, throwing);
+        return appendMethod(access, false, returnType, name, parameters, throwing);
+    }
+
+    public MethodBuilder appendMethod(String access, boolean statik, String returnType, String name, ArrayList<String> parameters, String throwing) {
+        MethodBuilder res = new MethodBuilder(depth + 1, access, statik, returnType, name, parameters, throwing);
         methods.add(res);
         return res;
     }
