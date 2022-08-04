@@ -14,9 +14,11 @@
 package org.scribble.runtime.net;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.TimeUnit;
 
 import org.scribble.runtime.session.SessionEndpoint;
 
@@ -41,10 +43,21 @@ public class SocketChannelEndpoint extends BinaryChannelEndpoint
 	
 	@Override
 	//public void initClient(MPSTEndpoint<?, ?> se, String host, int port) throws IOException
-	public void initClient(SessionEndpoint<?, ?> se, String host, int port) throws IOException
-	{
-		SocketChannel s = SocketChannel.open(new InetSocketAddress(host, port));
-		super.init(se, s);
+	public void initClient(SessionEndpoint<?, ?> se, String host, int port) throws IOException {
+		try (SocketChannel s = SocketChannel.open(new InetSocketAddress(host, port))) {
+			super.init(se, s);
+		}
+		catch (ConnectException e) {
+			System.out.println("Could not connect to " + host + ":" + port + ", most likely because the receiving endpoint is not running.");
+			System.out.println("Retrying in one second.");
+			try {
+				TimeUnit.SECONDS.sleep(1);
+				initClient(se, host, port);
+			}
+			catch(InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
+		}
 	}
 
 	@Override
