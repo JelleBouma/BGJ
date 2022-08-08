@@ -111,8 +111,6 @@ class ProtocolGenerator {
         setup.appendComment("@ ensures Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
         setup.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
         setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + (isClient ? "(host, " : "(") + "8888);");
-        MethodBuilder choose = mainClass.appendMethod("public", true, "int", "choose", new ArrayList<>(), ""); // only needed when internal choice is present, TODO: detect presence of internal choice
-        choose.appendStatement("return 0;");
         MethodBuilder run = mainClass.appendMethod("public", true, "void", "run", new ArrayList<>(), "Exception");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
@@ -131,7 +129,7 @@ class ProtocolGenerator {
                 StateTransition transition = op.transitions.getMatch(t -> t.originState == state);
                 String option = transition.isExternalChoice() ?
                     (StringUtils.decapitalise(className) + ".receiveExternalChoice() == " + StringUtils.decapitalise(className) + ".EXTERNAL_CHOICE_" + op.getName().toUpperCase(Locale.ROOT)) :
-                    ("choose() == " + oo);
+                    ("Utilities.random(" + enabledOperations.size() + ") == " + oo);
                 ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (" + option + ")"));
                 String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
                 choice.appendStatement(StringUtils.decapitalise(className) + "." + StringUtils.decapitalise(op.getName()) + "(" + params + ");");
@@ -147,6 +145,19 @@ class ProtocolGenerator {
             else
                 generateRunner(control, targetState);
         }
+    }
+
+    HashMap<String, String> generateUtilities(boolean verificationSkeleton) {
+        ClassBuilder util = new ClassBuilder(pkg, "public", "Utilities");
+        MethodBuilder random = util.appendMethod("public", true, "int", "random", new ArrayList<>("int bound"), "");
+        if (verificationSkeleton) {
+            random.appendComment("@ requires bound > 0;");
+            random.appendComment("@ ensures \\result >= 0 && \\result < bound;");
+            random.appendStatement("return 0;");
+        }
+        else
+            random.appendStatement("return (int)(Math.random() * bound);");
+        return util.mapContentsToFileName(verificationSkeleton ? "verification-skeleton\\" : "src\\");
     }
 
     void generateImports() {
