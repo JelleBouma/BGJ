@@ -180,8 +180,8 @@ class ProtocolGenerator {
     }
 
     void generateAttributes(boolean verificationSkeleton) {
+        classBuilder.appendAttribute("int", "state");
         if (verificationSkeleton) {
-            classBuilder.appendAttribute("int", "state");
             if (hasExternalChoice)
                 classBuilder.appendAttribute("int", "choice");
         }
@@ -199,10 +199,10 @@ class ProtocolGenerator {
     }
 
     void generateConstructor(MethodBuilder constructor, boolean verificationSkeleton) {
+        constructor.appendStatement("state = " + initialState.id + ";");
         if (verificationSkeleton) {
             ArrayList<String> perms = new ArrayList<>("Perm(state, 1)");
             ArrayList<String> ensures = new ArrayList<>("state == " + initialState.id);
-            constructor.appendStatement("state = " + initialState.id + ";");
             if (hasExternalChoice) {
                 perms.add("Perm(choice, 1)");
                 ensures.add("choice == -1");
@@ -268,6 +268,7 @@ class ProtocolGenerator {
 
     void generateOperation(Operation operation, boolean verificationSkeleton) {
         MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), operation.getFullName(), operation.getParameters(), "Exception");
+        generateStateChange(operation, method, verificationSkeleton);
         if (verificationSkeleton)
             generateVerification(operation, method);
         else
@@ -289,10 +290,6 @@ class ProtocolGenerator {
             ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");
             method.appendStatement("return new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
         }
-        if (transition.targetState.isTerminal()) { // FIXME: problem with multiple state transitions if only one is terminal.
-            method.appendStatement("endpoint.setCompleted();");
-            method.appendStatement("endpoint.close();");
-        }
     }
 
     void generateVerification(Operation operation, MethodBuilder method) {
@@ -304,20 +301,38 @@ class ProtocolGenerator {
             StateTransition transition = operation.transitions.iterator().next();
             method.appendComment("@ requires state == " + transition.originState.id + choiceRequirement + ";");
             method.appendComment("@ ensures state == " + transition.targetState.id + choiceGuarantee + nonNullCondition + ";");
-            method.appendStatement("state = " + transition.targetState.id + ";");
         }
         else {
             HashSet<String> preconditions = operation.transitions.convertAll(t -> "state == " + t.originState.id + (t.isExternalChoice() ? choiceRequirement : ""));
             HashSet<String> postconditions = operation.transitions.convertAll(t -> "\\old(state) == " + t.originState.id + " && state == " + t.targetState.id);
             method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
             method.appendComment("@ ensures " + String.join(" || ", postconditions) + choiceGuarantee + nonNullCondition + ";");
-            ControlBuilder stateSwitch = method.appendControl("switch(state)");
-            HashSet<String> stateChanges = operation.transitions.convertAll(t -> "case " + t.originState.id + ": state = " + t.targetState.id + "; break;");
-            stateSwitch.appendStatements(stateChanges);
         }
         if (operation.isExternalChoice())
             method.appendStatement("choice = -1;");
         if (!operation.getReturnType().equals("void"))
             method.appendStatement(operation.payload.getDefaultReturnStatement());
+    }
+
+    void generateStateChange(Operation operation, MethodBuilder method, boolean vercorsSkeleton) {
+        if (operation.transitions.size() == 1) { // only one state transition exists for this operation
+            StateTransition transition = operation.transitions.iterator().next();
+            method.appendStatement("state = " + transition.targetState.id + ";");
+            if (!vercorsSkeleton && transition.targetState.isTerminal()) { // if the protocol has reached the terminal state, the endpoint should be closed
+                method.appendStatement("endpoint.setCompleted();");
+                method.appendStatement("endpoint.close();");
+            }
+        }
+        else { // multiple state transitions exists for this operation
+            ControlBuilder stateSwitch = method.appendControl("switch(state)");
+            HashSet<String> stateChanges = operation.transitions.convertAll(t -> "case " + t.originState.id + ": state = " + t.targetState.id + "; break;");
+            stateSwitch.appendStatements(stateChanges);
+            StateTransition terminal = operation.transitions.getMatch(t -> t.targetState.isTerminal());
+            if (!vercorsSkeleton && terminal != null) { // if the protocol has reached the terminal state, the endpoint should be closed
+                ControlBuilder terminalControl = method.appendControl("if (state == " + terminal.targetState.id + ")");
+                terminalControl.appendStatement("endpoint.setCompleted();");
+                terminalControl.appendStatement("endpoint.close();");
+            }
+        }
     }
 }
