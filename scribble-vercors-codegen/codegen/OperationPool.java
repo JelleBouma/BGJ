@@ -38,8 +38,7 @@ public class OperationPool extends ArrayList<Operation> {
     public HashSet<Role> getTargetRoles() {
         HashSet<Role> res = new HashSet<>();
         for (Operation op : this)
-            for (StateTransition st : op.transitions)
-                res.add(st.targetRole);
+            res.add(op.targetRole);
         System.out.println(res);
         return res;
     }

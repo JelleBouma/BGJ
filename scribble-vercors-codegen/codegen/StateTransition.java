@@ -9,12 +9,10 @@ import java.util.Objects;
 class StateTransition {
     EState originState;
     EState targetState;
-    Role targetRole;
 
-    StateTransition(EState originState, EState targetState, Role targetRole) {
+    StateTransition(EState originState, EState targetState) {
         this.originState = originState;
         this.targetState = targetState;
-        this.targetRole = targetRole;
     }
 
     boolean isExternalChoice() {
@@ -26,11 +24,11 @@ class StateTransition {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         StateTransition that = (StateTransition) o;
-        return originState.id == that.originState.id && targetState.id == that.targetState.id && targetRole.equals(that.targetRole);
+        return originState.id == that.originState.id && targetState.id == that.targetState.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(originState.id, targetState.id, targetRole);
+        return Objects.hash(originState.id, targetState.id);
     }
 }

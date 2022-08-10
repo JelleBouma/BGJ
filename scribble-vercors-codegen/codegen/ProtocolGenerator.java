@@ -132,13 +132,13 @@ class ProtocolGenerator {
                     ("Utilities.random(" + enabledOperations.size() + ") == " + oo);
                 ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (" + option + ")"));
                 String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
-                choice.appendStatement(StringUtils.decapitalise(className) + "." + StringUtils.decapitalise(op.getName()) + "(" + params + ");");
+                choice.appendStatement(StringUtils.decapitalise(className) + "." + op.getFullName() + "(" + params + ");");
                 generateRunner(choice, transition.targetState);
             }
         else if (enabledOperations.size() == 1) {
             Operation op = enabledOperations.first();
             String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
-            control.appendStatement(StringUtils.decapitalise(className) + "." + StringUtils.decapitalise(op.getName()) + "(" + params + ");");
+            control.appendStatement(StringUtils.decapitalise(className) + "." + op.getFullName() + "(" + params + ");");
             EState targetState = enabledTransitions.first().targetState;
             if (targetState.id == initialState.id)
                 control.appendStatement("run();");
@@ -267,7 +267,7 @@ class ProtocolGenerator {
     }
 
     void generateOperation(Operation operation, boolean verificationSkeleton) {
-        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), StringUtils.decapitalise(operation.getName()), operation.getParameters(), "Exception");
+        MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), operation.getFullName(), operation.getParameters(), "Exception");
         if (verificationSkeleton)
             generateVerification(operation, method);
         else
@@ -277,19 +277,19 @@ class ProtocolGenerator {
     void generateExecutableCode(Operation operation, MethodBuilder method) {
         StateTransition transition = operation.transitions.getMatch(t -> true);
         if (operation.payload.isSend) {
-            ArrayList<String> parameters = new ArrayList<>(transition.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
+            ArrayList<String> parameters = new ArrayList<>(operation.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
             parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
             method.appendStatement("new OutputSocket<Session, Role>(endpoint).writeScribMessage(" + String.join(", ", parameters) + ");");
         } else if (operation.getReturnType().equals("void"))
-            method.appendStatement("receiveScribMessage(" + transition.targetRole + ");");
+            method.appendStatement("receiveScribMessage(" + operation.targetRole + ");");
         else if (operation.payload.name.isBlank())
-            method.appendStatement("return (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + transition.targetRole + ").payload[0]);");
+            method.appendStatement("return (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + operation.targetRole + ").payload[0]);");
         else {
-            method.appendStatement("Object[] payload = receiveScribMessage(" + transition.targetRole + ").payload;");
+            method.appendStatement("Object[] payload = receiveScribMessage(" + operation.targetRole + ").payload;");
             ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");
             method.appendStatement("return new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
         }
-        if (transition.targetState.isTerminal()) {
+        if (transition.targetState.isTerminal()) { // FIXME: problem with multiple state transitions if only one is terminal.
             method.appendStatement("endpoint.setCompleted();");
             method.appendStatement("endpoint.close();");
         }
