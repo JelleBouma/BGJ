@@ -35,11 +35,11 @@ public class OperationPool extends ArrayList<Operation> {
         return super.add(toBeAdded);
     }
 
-    public HashSet<Role> getTargetRoles() {
-        HashSet<Role> res = new HashSet<>();
+    public ArrayList<Role> getTargetRoles() {
+        ArrayList<Role> res = new ArrayList<>();
         for (Operation op : this)
-            res.add(op.targetRole);
-        System.out.println(res);
+            if (!res.contains(op.targetRole))
+                res.add(op.targetRole);
         return res;
     }
 }

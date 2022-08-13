@@ -2,7 +2,6 @@ package scribblevercors.codegen;
 
 import org.scribble.core.model.endpoint.EState;
 import org.scribble.core.model.endpoint.EStateKind;
-import org.scribble.core.type.name.Role;
 
 import java.util.Objects;
 

@@ -5,7 +5,6 @@ import org.scribble.core.type.name.Role;
 import org.scribble.job.Job;
 import org.scribble.util.ScribException;
 import org.scribble.util.ScribUtil;
-import scribblevercors.util.ClassBuilder;
 import scribblevercors.util.StringUtils;
 
 import java.util.HashMap;

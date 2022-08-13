@@ -5,7 +5,7 @@ import org.scribble.core.job.Core;
 import org.scribble.core.job.CoreArgs;
 import org.scribble.core.job.CoreContext;
 import org.scribble.core.model.endpoint.EState;
-import org.scribble.core.model.endpoint.EStateKind;
+import org.scribble.core.model.endpoint.actions.EAction;
 import org.scribble.core.type.name.GProtoName;
 import org.scribble.core.type.name.Role;
 import org.scribble.job.Job;
@@ -24,16 +24,16 @@ class ProtocolGenerator {
     Core core;
     GProtoName gpn;
     Role role; // the role for which we are generating code
-    HashSet<Role> targetRoles; // the roles that interact with ProtocolGenerator.role (excluding ProtocolGenerator.role)
+    ArrayList<Role> targetRoles; // the roles that interact with ProtocolGenerator.role (excluding ProtocolGenerator.role)
     HashSet<Role> allRoles; // the roles that interact with ProtocolGenerator.role (including ProtocolGenerator.role)
     EState initialState;
     ClassBuilder classBuilder;
-    OperationPool operations = new OperationPool();
-    ArrayList<Operation> externalChoices;
-    ArrayList<StateTransition> transitions = new ArrayList<>();
-    HashSet<StateTransition> externalChoiceTransitions = new HashSet<>();
-    boolean hasExternalChoice;
-    boolean isClient;
+    OperationPool operations = new OperationPool(); // all operations for ProtocolGenerator.role
+    ArrayList<Operation> externalChoices; // all operations for ProtocolGenerator.role which can be externally chosen
+    ArrayList<StateTransition> transitions = new ArrayList<>(); // all state transitions for ProtocolGenerator.role
+    HashSet<StateTransition> externalChoiceTransitions = new HashSet<>();  // all state transitions for ProtocolGenerator.role which are externally chosen
+    boolean hasExternalChoice; // whether there are any externally chosen state transitions for ProtocolGenerator.role
+    HashMap<Role, Boolean> isClientTo = new HashMap<>(); // for each targetRole, whether ProtocolGenerator.role sends first.
 
     ProtocolGenerator(Job job, GProtoName gpn, Role role) throws ScribException {
         this.job = job;
@@ -45,7 +45,7 @@ class ProtocolGenerator {
         initialState = job.config.args.get(CoreArgs.MIN_EFSM) // not sure what is the difference if the graph is minimised.
             ? corec.getMinimisedEGraph(gpn, role).init
             : corec.getEGraph(gpn, role).init;
-        isClient = initialState.getStateKind() == EStateKind.OUTPUT;
+        buildConnectionMaps(initialState, new HashSet<>());
         System.out.println(initialState.toAut());
         operations.fillPool(initialState);
         for (Operation operation : operations)
@@ -61,6 +61,16 @@ class ProtocolGenerator {
         processNames();
     }
 
+    void buildConnectionMaps(EState state, HashSet<EState> history) {
+        for (EAction action : state.getActions())
+            if (!isClientTo.containsKey(action.obj))
+                isClientTo.put(action.obj, action.isSend());
+        history.add(state);
+        for (EState succ : state.getSuccs())
+            if (!history.contains(succ))
+                buildConnectionMaps(succ, history);
+    }
+
     void processNames() {
         className = StringUtils.capitalise(gpn.getSimpleName().toString()) + StringUtils.capitalise(role.toString());
         ArrayList<String> pkgElements = new ArrayList<>(gpn.getElements());
@@ -74,9 +84,14 @@ class ProtocolGenerator {
         HashMap<String, String> res = new HashMap<>();
         classBuilder = new ClassBuilder(pkg, "public", className);
         generateAttributes(verificationSkeleton);
-        ArrayList<String> constructorParams = new ArrayList<>("int port");
-        if (isClient)
-            constructorParams.add(0, "String host");
+        ArrayList<String> constructorParams = new ArrayList<>();
+        if (isClientTo.containsValue(false))
+            constructorParams.add("int port");
+        for (Role role : isClientTo.keySet())
+            if (isClientTo.get(role)) {
+                constructorParams.add("String host" + role);
+                constructorParams.add("int port" + role);
+            }
         generateConstructor(classBuilder.createConstructor("public", constructorParams, "Exception"), verificationSkeleton);
         if (!verificationSkeleton) {
             generateImports();
@@ -98,19 +113,35 @@ class ProtocolGenerator {
         mainClass.appendAttribute("", className, StringUtils.decapitalise(className), true, false);
         MethodBuilder mainMethod = mainClass.appendMethod("public", true, "void", "main", new ArrayList<>("String[] args"), "Exception");
         mainMethod.appendComment("@ requires Perm(" + StringUtils.decapitalise(className) + ", 1);");
-        if (isClient) {
-            mainMethod.appendComment("@ requires args != null && args.length > 0;");
-            mainMethod.appendComment("@ requires Perm(args[0], 1);");
-            mainMethod.appendStatement("setup(args[0]);");
+        int argCount = isClientTo.containsValue(false) ? 1 : 0;
+        for (boolean server : isClientTo.values())
+            if (server)
+                argCount += 2;
+        mainMethod.appendComment("@ requires args != null && args.length >= " + argCount + ";");
+        ArrayList<String> args = new ArrayList<>();
+        for (int aa = 0; aa < argCount; aa++) {
+            mainMethod.appendComment("@ requires Perm(args[" + aa + "], 1);");
+            if (aa % 2 == argCount % 2)
+                args.add("args[" + aa + "]");
+            else
+                args.add("Utilities.parseInt(args[" + aa + "])");
         }
-        else
-            mainMethod.appendStatement("setup();");
+        mainMethod.appendStatement("setup(" + String.join(", ", args) + ");");
         mainMethod.appendStatement("run();");
-        MethodBuilder setup = mainClass.appendMethod("public", true, "void", "setup", isClient ? new ArrayList<>("String host") : new ArrayList<>(), "Exception");
+        ArrayList<String> setupParams = new ArrayList<>();
+        if (isClientTo.containsValue(false))
+            setupParams.add("int port");
+        for (Role role : isClientTo.keySet())
+            if (isClientTo.get(role)) {
+                setupParams.add("String host" + role);
+                setupParams.add("int port" + role);
+            }
+        ArrayList<String> constructorParams = setupParams.convertAll(s -> s.split(" ")[1]);
+        MethodBuilder setup = mainClass.appendMethod("public", true, "void", "setup", setupParams, "Exception");
         setup.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
         setup.appendComment("@ ensures Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
         setup.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
-        setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + (isClient ? "(host, " : "(") + "8888);");
+        setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + "(" + String.join(", ", constructorParams) + ");");
         MethodBuilder run = mainClass.appendMethod("public", true, "void", "run", new ArrayList<>(), "Exception");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
@@ -150,13 +181,17 @@ class ProtocolGenerator {
     HashMap<String, String> generateUtilities(boolean verificationSkeleton) {
         ClassBuilder util = new ClassBuilder(pkg, "public", "Utilities");
         MethodBuilder random = util.appendMethod("public", true, "int", "random", new ArrayList<>("int bound"), "");
+        MethodBuilder parseInt = util.appendMethod("public", true, "int", "parseInt", new ArrayList<>("String str"), "");
         if (verificationSkeleton) {
             random.appendComment("@ requires bound > 0;");
             random.appendComment("@ ensures \\result >= 0 && \\result < bound;");
             random.appendStatement("return 0;");
+            parseInt.appendStatement("return 0;");
         }
-        else
+        else {
             random.appendStatement("return (int)(Math.random() * bound);");
+            parseInt.appendStatement("return Integer.parseInt(str);");
+        }
         return util.mapContentsToFileName(verificationSkeleton ? "verification-skeleton\\" : "src\\");
     }
 
@@ -220,12 +255,12 @@ class ProtocolGenerator {
             for (Role r : allRoles)
                 constructor.appendStatement("roles.add(" + r + ");");
             constructor.appendStatement("Session session = new Session(new LinkedList<>(), \"getSource\", STypeFactory.parseGlobalProtocolName(\"" + gpn + "\"), roles);");
-            if (!isClient)
+            if (isClientTo.containsValue(false))
                 constructor.appendStatement("ScribServerSocket ss = new SocketChannelServer(port);");
             constructor.appendStatement("endpoint = new MPSTEndpoint<>(session, " + role + ", new ObjectStreamFormatter());");
             for (Role target : targetRoles)
-                if (isClient)
-                    constructor.appendStatement("endpoint.request(" + target + ", SocketChannelEndpoint::new, host, port);");
+                if (isClientTo.get(target))
+                    constructor.appendStatement("endpoint.request(" + target + ", SocketChannelEndpoint::new, host" + target + ", port" + target + ");");
                 else
                     constructor.appendStatement("endpoint.accept(ss, " + target + ");");
             constructor.appendStatement("endpoint.init();");
@@ -268,7 +303,6 @@ class ProtocolGenerator {
 
     void generateOperation(Operation operation, boolean verificationSkeleton) {
         MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), operation.getFullName(), operation.getParameters(), "Exception");
-        generateStateChange(operation, method, verificationSkeleton);
         if (verificationSkeleton)
             generateVerification(operation, method);
         else
@@ -276,7 +310,6 @@ class ProtocolGenerator {
     }
 
     void generateExecutableCode(Operation operation, MethodBuilder method) {
-        StateTransition transition = operation.transitions.getMatch(t -> true);
         if (operation.payload.isSend) {
             ArrayList<String> parameters = new ArrayList<>(operation.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
             parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
@@ -284,12 +317,15 @@ class ProtocolGenerator {
         } else if (operation.getReturnType().equals("void"))
             method.appendStatement("receiveScribMessage(" + operation.targetRole + ");");
         else if (operation.payload.name.isBlank())
-            method.appendStatement("return (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + operation.targetRole + ").payload[0]);");
+            method.appendStatement(operation.getReturnType() + " res = (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + operation.targetRole + ").payload[0]);");
         else {
             method.appendStatement("Object[] payload = receiveScribMessage(" + operation.targetRole + ").payload;");
             ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");
-            method.appendStatement("return new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
+            method.appendStatement(operation.payload.name + " res = new " + operation.payload.name + "(" + String.join(", ", payloadParams) + ");");
         }
+        generateStateChange(operation, method, false);
+        if (!operation.getReturnType().equals("void"))
+            method.appendStatement("return res;");
     }
 
     void generateVerification(Operation operation, MethodBuilder method) {
@@ -308,6 +344,7 @@ class ProtocolGenerator {
             method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
             method.appendComment("@ ensures " + String.join(" || ", postconditions) + choiceGuarantee + nonNullCondition + ";");
         }
+        generateStateChange(operation, method, true);
         if (operation.isExternalChoice())
             method.appendStatement("choice = -1;");
         if (!operation.getReturnType().equals("void"))

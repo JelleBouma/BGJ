@@ -44,7 +44,8 @@ public class SocketChannelEndpoint extends BinaryChannelEndpoint
 	@Override
 	//public void initClient(MPSTEndpoint<?, ?> se, String host, int port) throws IOException
 	public void initClient(SessionEndpoint<?, ?> se, String host, int port) throws IOException {
-		try (SocketChannel s = SocketChannel.open(new InetSocketAddress(host, port))) {
+		try {
+			SocketChannel s = SocketChannel.open(new InetSocketAddress(host, port));
 			super.init(se, s);
 		}
 		catch (ConnectException e) {
