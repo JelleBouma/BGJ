@@ -76,30 +76,10 @@ public class ArrayList<E> extends java.util.ArrayList<E> {
     }
 
     /**
-     * Checks if any element returns true for the predicate.
-     * @param predicate the predicate to check.
-     * @return true if there is an element that returns true for the predicate, false otherwise.
-     */
-    public boolean anyMatch(Predicate<E> predicate) {
-        for (E e : this)
-            if (predicate.test(e))
-                return true;
-        return false;
-    }
-
-    /**
      * Get the first element from the list without changing the list.
      * @return the first element in this list.
      */
     public E first() {
         return get(0);
-    }
-
-    /**
-     * Get the last element from the list without changing the list.
-     * @return the last element in this list.
-     */
-    public E last() {
-        return get(size() - 1);
     }
 }

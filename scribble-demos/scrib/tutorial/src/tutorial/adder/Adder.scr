@@ -20,8 +20,14 @@ data <java> "java.lang.Integer" from "rt.jar" as Int;
 
 
 global protocol Adder(role C, role I, role S) {
-    Add(Int, Int) from C to I;
-    Add(Int, Int) from I to S;
-    Res(Int) from S to I;
-    Res(Int) from I to C;
+    choice at C {
+        Add(Int, Int) from C to I;
+        Add(Int, Int) from I to S;
+        Res(Int) from S to I;
+        Res(Int) from I to C;
+    }
+    or {
+        Bye() from C to I;
+        Bye() from I to S;
+    }
 }

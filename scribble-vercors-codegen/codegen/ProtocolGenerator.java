@@ -139,13 +139,25 @@ class ProtocolGenerator {
         ArrayList<String> constructorParams = setupParams.convertAll(s -> s.split(" ")[1]);
         MethodBuilder setup = mainClass.appendMethod("public", true, "void", "setup", setupParams, "Exception");
         setup.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
-        setup.appendComment("@ ensures Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
-        setup.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
+        ArrayList<String> setupEnsuringPerms = new ArrayList<>(".state");
+        ArrayList<String> setupEnsuring = new ArrayList<>(".state == " + initialState.id);
+        if (hasExternalChoice) {
+            setupEnsuringPerms.add(".choice");
+            setupEnsuringPerms.addAll(externalChoices.convertAll(o -> ".EXTERNAL_CHOICE_" + o.getName().toUpperCase(Locale.ROOT)));
+            setupEnsuring.add(".choice == -1");
+            setupEnsuring.addAll(externalChoices.convertAll(o -> ".EXTERNAL_CHOICE_" + o.getName().toUpperCase(Locale.ROOT) + " == " + o.id));
+        }
+        setupEnsuringPerms = setupEnsuringPerms.convertAll(s -> StringUtils.decapitalise(className) + s);
+        setupEnsuring = setupEnsuring.convertAll(s -> StringUtils.decapitalise(className) + s);
+        for (String perm : setupEnsuringPerms)
+            setup.appendComment("@ ensures Perm(" + perm + ", 1);");
+        setup.appendComment("@ ensures " + String.join(" && ", setupEnsuring) + ";");
         setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + "(" + String.join(", ", constructorParams) + ");");
         MethodBuilder run = mainClass.appendMethod("public", true, "void", "run", new ArrayList<>(), "Exception");
         run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
-        run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
-        run.appendComment("@ requires " + StringUtils.decapitalise(className) + ".state == " + initialState.id + ";");
+        for (String perm : setupEnsuringPerms)
+            run.appendComment("@ context Perm(" + perm + ", 1);");
+        run.appendComment("@ requires " + String.join(" && ", setupEnsuring) + ";");
         run.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + transitions.firstMatch(t -> t.targetState.isTerminal()).targetState.id + ";");
         generateRunner(run, initialState);
         return mainClass.mapContentsToFileName("src\\");

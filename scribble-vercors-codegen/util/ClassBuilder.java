@@ -25,11 +25,6 @@ public class ClassBuilder {
         this.extendsLine = extending.isBlank() ? "" : "extends " + extending;
     }
 
-    ClassBuilder(int depth, String name, String extending) {
-        this("", "", name, extending);
-        this.depth = depth;
-    }
-
     public void appendImport(String imprt) {
         imports.add(imprt);
     }
@@ -63,16 +58,6 @@ public class ClassBuilder {
         attributes.add(String.join(" ", parts) + ";");
     }
 
-    public ClassBuilder appendInnerClass(String name, String extending) {
-        ClassBuilder res = new ClassBuilder(depth + 1, name, extending);
-        inners.add(res);
-        return res;
-    }
-
-    public MethodBuilder createConstructor(String access, String... parameters) {
-        return createConstructor(access, new ArrayList<>(parameters));
-    }
-
     public MethodBuilder createConstructor(String access, ArrayList<String> parameters) {
         MethodBuilder res = new MethodBuilder(depth + 1, access, "", name, parameters);
         methods.add(0, res);
@@ -83,15 +68,6 @@ public class ClassBuilder {
         MethodBuilder res = new MethodBuilder(depth + 1, access, "", name, parameters, throwing);
         methods.add(0, res);
         return res;
-    }
-
-
-    public MethodBuilder appendMethod(String access, String returnType, String name, String... parameters) {
-        return appendMethod(access, returnType, name, new ArrayList<>(parameters));
-    }
-
-    public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters) {
-        return appendMethod(access, returnType, name, parameters, "");
     }
 
     public MethodBuilder appendMethod(String access, String returnType, String name, ArrayList<String> parameters, String throwing) {
