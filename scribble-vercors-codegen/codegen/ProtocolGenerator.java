@@ -189,7 +189,10 @@ class ProtocolGenerator {
                 ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (" + option + ")"));
                 String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
                 choice.appendStatement(StringUtils.decapitalise(className) + "." + op.getFullName() + "(" + params + ");");
-                generateRunner(choice, transition.targetState);
+                if (transition.originState == transition.targetState)
+                    choice.appendStatement("run();");
+                else
+                    generateRunner(choice, transition.targetState);
             }
         else if (enabledOperations.size() == 1) {
             Operation op = enabledOperations.first();
