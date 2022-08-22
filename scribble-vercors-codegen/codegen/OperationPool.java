@@ -11,6 +11,10 @@ import java.util.Set;
 
 public class OperationPool extends ArrayList<Operation> {
 
+    /**
+     * Find all reachable operations and add them to this list.
+     * @param initialState the initial state
+     */
     public void fillPool(EState initialState) {
         Set<EState> all = new HashSet<>();
         all.add(initialState);
@@ -25,6 +29,10 @@ public class OperationPool extends ArrayList<Operation> {
         }
     }
 
+    /**
+     * @param toBeAdded element whose presence in this collection is to be ensured
+     * @return true if the collection changed as a direct result of this method
+     */
     @Override
     public boolean add(Operation toBeAdded) {
         for (Operation op : this)
@@ -35,6 +43,9 @@ public class OperationPool extends ArrayList<Operation> {
         return super.add(toBeAdded);
     }
 
+    /**
+     * @return a list of all roles that the current role interacts with
+     */
     public ArrayList<Role> getTargetRoles() {
         ArrayList<Role> res = new ArrayList<>();
         for (Operation op : this)

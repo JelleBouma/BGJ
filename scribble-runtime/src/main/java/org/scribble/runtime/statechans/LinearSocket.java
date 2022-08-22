@@ -41,10 +41,11 @@ public abstract class LinearSocket<S extends Session, R extends Role> extends Sc
 	//protected synchronized void use() throws ScribbleRuntimeException
 	protected void use() throws ScribRuntimeException
 	{
-		if (this.used)
-		{
-			throw new ScribRuntimeException("Linear socket resource already used: " + this.getClass());
-		}
+		// FIXME: HACK, allows reusing objects instead of making new ones for Scribble-Java-Vercors
+		//if (this.used)
+		//{
+		//	throw new ScribRuntimeException("Linear socket resource already used: " + this.getClass());
+		//}
 		this.used = true;
 	}
 	

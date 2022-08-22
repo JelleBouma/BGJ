@@ -79,6 +79,11 @@ class ProtocolGenerator {
         pkg = String.join(".", pkgElements).toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * Generate the protocol class and payload classes if needed.
+     * @param verificationSkeleton Whether the generated classes are to be used for verification (as opposed to execution).
+     * @return A hashmap of file names and contents of the protocol class and payload classes.
+     */
     HashMap<String, String> generateClasses(boolean verificationSkeleton) {
         String dir = verificationSkeleton ? "verification-skeleton\\" : "src\\";
         HashMap<String, String> res = new HashMap<>();
@@ -108,6 +113,10 @@ class ProtocolGenerator {
         return res;
     }
 
+    /**
+     * Generate the main class.
+     * @return A hashmap of file name and content of the main class.
+     */
     HashMap<String, String> generateMainClass() {
         ClassBuilder mainClass = new ClassBuilder(pkg, "public", className + "Main");
         mainClass.appendAttribute("", className, StringUtils.decapitalise(className), true, false);
@@ -163,6 +172,10 @@ class ProtocolGenerator {
         return mainClass.mapContentsToFileName("src\\");
     }
 
+    /**
+     * Generate the run method of the main class.
+     * This method is used to actually run the scribble protocol, and will be equivalent to it.
+     */
     void generateRunner(ControlBuilder control, EState state) {
         ArrayList<StateTransition> enabledTransitions = transitions.filter(t -> t.originState == state);
         ArrayList<Operation> enabledOperations = operations.filter(o -> o.transitions.containsAny(enabledTransitions));
@@ -190,6 +203,11 @@ class ProtocolGenerator {
         }
     }
 
+    /**
+     * Generate the utilities class, which purpose is to provide utility methods with a verifiable skeleton.
+     * @param verificationSkeleton Whether the generated class is to be used for verification (as opposed to execution).
+     * @return A hashmap of file name and content of the utilities class.
+     */
     HashMap<String, String> generateUtilities(boolean verificationSkeleton) {
         ClassBuilder util = new ClassBuilder(pkg, "public", "Utilities");
         MethodBuilder random = util.appendMethod("public", true, "int", "random", new ArrayList<>("int bound"), "");
@@ -240,6 +258,8 @@ class ProtocolGenerator {
                 classBuilder.appendAttribute("private", "boolean", "choiceMade", "false");
                 classBuilder.appendAttribute("private", "ScribMessage", "chosenMessage");
             }
+            classBuilder.appendAttribute("ReceiveSocket<Session, Role>", "receiveSocket");
+            classBuilder.appendAttribute("OutputSocket<Session, Role>", "outputSocket");
         }
         for (Operation operation : externalChoices)
             classBuilder.appendAttribute("public", "int", "EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT), false, true);
@@ -276,6 +296,8 @@ class ProtocolGenerator {
                 else
                     constructor.appendStatement("endpoint.accept(ss, " + target + ");");
             constructor.appendStatement("endpoint.init();");
+            constructor.appendStatement("receiveSocket = new ReceiveSocket<>(endpoint);");
+            constructor.appendStatement("outputSocket = new OutputSocket<>(endpoint);");
         }
         for (Operation operation : externalChoices)
             constructor.appendStatement("EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT) + " = " + operation.id + ";");
@@ -310,7 +332,7 @@ class ProtocolGenerator {
             ifChoiceMade.appendStatement("choiceMade = false;");
             ifChoiceMade.appendStatement("return chosenMessage;");
         }
-        method.appendStatement("return new ReceiveSocket<Session, Role>(endpoint).readScribMessage(role);");
+        method.appendStatement("return receiveSocket.readScribMessage(role);");
     }
 
     void generateOperation(Operation operation, boolean verificationSkeleton) {
@@ -325,11 +347,11 @@ class ProtocolGenerator {
         if (operation.payload.isSend) {
             ArrayList<String> parameters = new ArrayList<>(operation.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
             parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
-            method.appendStatement("new OutputSocket<Session, Role>(endpoint).writeScribMessage(" + String.join(", ", parameters) + ");");
+            method.appendStatement("outputSocket.writeScribMessage(" + String.join(", ", parameters) + ");");
         } else if (operation.getReturnType().equals("void"))
             method.appendStatement("receiveScribMessage(" + operation.targetRole + ");");
         else if (operation.payload.name.isBlank())
-            method.appendStatement(operation.getReturnType() + " res = (" + operation.getReturnType() + ")(new ReceiveSocket<Session, Role>(endpoint).readScribMessage(" + operation.targetRole + ").payload[0]);");
+            method.appendStatement(operation.getReturnType() + " res = (" + operation.getReturnType() + ")(receiveSocket.readScribMessage(" + operation.targetRole + ").payload[0]);");
         else {
             method.appendStatement("Object[] payload = receiveScribMessage(" + operation.targetRole + ").payload;");
             ArrayList<String> payloadParams = operation.payload.contents.combineAll(ArrayList.range(0, operation.payload.contents.size()), (a, i) -> "(" + a.type + ")payload[" + i + "]");

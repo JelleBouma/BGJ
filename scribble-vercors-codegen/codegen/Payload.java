@@ -64,14 +64,24 @@ class Payload {
         }
     }
 
+    /**
+     * @return the return type of the operation, or "void" if there is none.
+     */
     String getReturnType() {
         return isSend || contents.size() == 0 ? "void" : name.equals("") ? contents.get(0).type : name;
     }
 
-    String getReturnStatement(ArrayList<String> args) {
-        return "return " + (name.equals("") ? args.get(0) : "new " + name + "(" + String.join(", ", args) + ")") + ";";
+    /**
+     * @param vars A list of variables to return.
+     * @return A return statement, returning a payload object if applicable.
+     */
+    String getReturnStatement(ArrayList<String> vars) {
+        return "return " + (name.equals("") ? vars.get(0) : "new " + name + "(" + String.join(", ", vars) + ")") + ";";
     }
 
+    /**
+     * @return A return statement, returning either a default value or a payload object constructed with default values if applicable.
+     */
     String getDefaultReturnStatement() {
         return getReturnStatement(getDefaultValues());
     }
@@ -80,6 +90,9 @@ class Payload {
         return isSend ? contents.convertAll(a -> a.type + " " + a.name) : new ArrayList<>();
     }
 
+    /**
+     * @return A list of the default values for each type.
+     */
     ArrayList<String> getDefaultValues() {
         return contents.convertAll(a -> a.defaultValue);
     }
