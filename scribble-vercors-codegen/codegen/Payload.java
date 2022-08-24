@@ -114,4 +114,12 @@ class Payload {
         Payload payload = (Payload) o;
         return contents.equals(payload.contents);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder res = new StringBuilder();
+        for (Arg arg : contents)
+            res.append(StringUtils.capitalise(arg.type));
+        return res.toString();
+    }
 }

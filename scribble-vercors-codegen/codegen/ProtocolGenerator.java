@@ -48,6 +48,7 @@ class ProtocolGenerator {
         buildConnectionMaps(initialState, new HashSet<>());
         System.out.println(initialState.toAut());
         operations.fillPool(initialState);
+        operations.distinguishOperations();
         for (Operation operation : operations)
             transitions.addAll(operation.transitions);
         targetRoles = operations.getTargetRoles();

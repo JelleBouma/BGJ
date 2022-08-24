@@ -14,6 +14,7 @@ public class Operation {
     EAction action;
     Payload payload;
     Role targetRole;
+    String setName = "";
 
     Operation(int id, EState origin, EAction eAction, EState target) {
         this.id = id;
@@ -32,10 +33,19 @@ public class Operation {
     }
 
     /**
+     * Adds payload types to name to prevent generated methods from having the same erasure.
+     */
+    void distinguish() {
+        setName = getName() + payload;
+        if (!payload.name.isBlank())
+            payload.name = setName + "Payload";
+    }
+
+    /**
      * @return name of the operation. If none is defined: "send" or "receive" respectively.
      */
     String getName() {
-        String name = action.mid.toString();
+        String name = setName.isBlank() ? action.mid.toString() : setName;
         if (name.equals("EMPTY_OP"))
             name = action.isSend() ? "send" : "receive";
         return name;

@@ -30,6 +30,20 @@ public class OperationPool extends ArrayList<Operation> {
     }
 
     /**
+     * Add payload types to operation names when necessary to prevent generated methods from having the same erasure.
+     */
+    public void distinguishOperations() {
+        for (Operation op : this)
+            if (!op.payload.isSend) {
+                ArrayList<Operation> sameErasure = filter(o -> o != op && o.getFullName().equals(op.getFullName()) && !o.payload.isSend);
+                if (sameErasure.size() > 0) {
+                    op.distinguish();
+                    sameErasure.forEach(Operation::distinguish);
+                }
+            }
+    }
+
+    /**
      * @param toBeAdded element whose presence in this collection is to be ensured
      * @return true if the collection changed as a direct result of this method
      */
