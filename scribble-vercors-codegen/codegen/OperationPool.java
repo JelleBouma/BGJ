@@ -44,6 +44,16 @@ public class OperationPool extends ArrayList<Operation> {
     }
 
     /**
+     * @return The class paths of all types that are communicated and need to be imported.
+     */
+    public HashSet<String> getPayloadImports() {
+        HashSet<String> res = new HashSet<>();
+        for (Operation op : this)
+            res.addAll(op.payload.getImportsNeeded());
+        return res;
+    }
+
+    /**
      * @param toBeAdded element whose presence in this collection is to be ensured
      * @return true if the collection changed as a direct result of this method
      */

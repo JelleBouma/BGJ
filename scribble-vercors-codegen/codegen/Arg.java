@@ -4,11 +4,17 @@ public class Arg {
     String type;
     String defaultValue;
     String name;
+    String classPath;
 
-    Arg(String type, String defaultValue, String name) {
+    Arg (String type, String defaultValue, String name) {
+        this(type, defaultValue, name, "");
+    }
+
+    Arg (String type, String defaultValue, String name, String classPath) {
         this.type = type;
         this.defaultValue = defaultValue;
         this.name = name;
+        this.classPath = classPath;
     }
 
     @Override

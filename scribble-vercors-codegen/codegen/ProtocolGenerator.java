@@ -99,8 +99,9 @@ class ProtocolGenerator {
                 constructorParams.add("int port" + role);
             }
         generateConstructor(classBuilder.createConstructor("public", constructorParams, "Exception"), verificationSkeleton);
+        generatePayloadImports(classBuilder);
         if (!verificationSkeleton) {
-            generateImports();
+            generateExecutionImports();
             generateReceiver();
         }
         if (hasExternalChoice)
@@ -120,6 +121,7 @@ class ProtocolGenerator {
      */
     HashMap<String, String> generateMainClass() {
         ClassBuilder mainClass = new ClassBuilder(pkg, "public", className + "Main");
+        generatePayloadImports(mainClass);
         mainClass.appendAttribute("", className, StringUtils.decapitalise(className), true, false);
         MethodBuilder mainMethod = mainClass.appendMethod("public", true, "void", "main", new ArrayList<>("String[] args"), "Exception");
         mainMethod.appendComment("@ requires Perm(" + StringUtils.decapitalise(className) + ", 1);");
@@ -229,7 +231,10 @@ class ProtocolGenerator {
         return util.mapContentsToFileName(verificationSkeleton ? "verification-skeleton\\" : "src\\");
     }
 
-    void generateImports() {
+    /**
+     * Generate imports needed for the executing protocol class (as opposed to the protocol class meant for verification).
+     */
+    void generateExecutionImports() {
         classBuilder.appendImport("org.scribble.core.type.name.Op");
         classBuilder.appendImport("org.scribble.core.type.name.Role");
         classBuilder.appendImport("org.scribble.runtime.message.ScribMessage");
@@ -246,6 +251,11 @@ class ProtocolGenerator {
         classBuilder.appendImport("java.io.IOException");
         classBuilder.appendImport("java.util.LinkedList");
         classBuilder.appendImport("java.util.List");
+    }
+
+    void generatePayloadImports(ClassBuilder cb) {
+        for (String imprt : operations.getPayloadImports())
+            cb.appendImport(imprt);
     }
 
     void generateAttributes(boolean verificationSkeleton) {

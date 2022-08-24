@@ -3,10 +3,8 @@ package scribblevercors.codegen;
 import org.scribble.core.model.endpoint.actions.EAction;
 import org.scribble.core.type.name.DataName;
 import org.scribble.core.type.name.PayElemType;
-import scribblevercors.util.ArrayList;
-import scribblevercors.util.ClassBuilder;
-import scribblevercors.util.MethodBuilder;
-import scribblevercors.util.StringUtils;
+import scribblevercors.util.*;
+import scribblevercors.util.StringBuilder;
 
 class Payload {
     String name; // Has the class name of the payload if applicable, otherwise an empty string.
@@ -60,7 +58,7 @@ class Payload {
                 break;
             default:
                 String[] typeParts = typeName.split("\\.");
-                contents.add(new Arg(typeParts[typeParts.length - 1], "null", name));
+                contents.add(new Arg(typeParts[typeParts.length - 1], "null", name, typeName));
         }
     }
 
@@ -97,9 +95,23 @@ class Payload {
         return contents.convertAll(a -> a.defaultValue);
     }
 
+
+    /**
+     * @return The class paths of all types in this payload need to be imported.
+     */
+    public HashSet<String> getImportsNeeded() {
+        HashSet<String> res = new HashSet<>();
+        for (Arg arg : this.contents)
+            if (!arg.classPath.isBlank())
+                res.add(arg.classPath);
+        return res;
+    }
     ClassBuilder getPayloadClass() {
         ClassBuilder cb = new ClassBuilder(ProtocolGenerator.pkg, "public", name);
         MethodBuilder constructor = cb.createConstructor("public", contents.convertAll(a -> a.type + " " + a.name));
+        HashSet<String> importsNeeded = getImportsNeeded();
+        for (String imprt : importsNeeded)
+            cb.appendImport(imprt);
         for (Arg arg : contents) {
             cb.appendAttribute("public", arg.type, arg.name);
             constructor.appendStatement("this." + arg.name + " = " + arg.name + ";");
