@@ -42,12 +42,14 @@ public class Operation {
     }
 
     /**
-     * @return name of the operation. If none is defined: "send" or "receive" respectively.
+     * @return name of the operation. If name is empty, or starts with a number: "send" or "receive" are prefixed to it.
      */
     String getName() {
         String name = setName.isBlank() ? action.mid.toString() : setName;
         if (name.equals("EMPTY_OP"))
             name = action.isSend() ? "send" : "receive";
+        else if (Character.isDigit(name.charAt(0)))
+            name = (action.isSend() ? "send" : "receive") + name;
         return name;
     }
 
