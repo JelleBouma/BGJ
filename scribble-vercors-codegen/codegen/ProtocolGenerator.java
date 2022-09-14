@@ -34,6 +34,7 @@ class ProtocolGenerator {
     HashSet<StateTransition> externalChoiceTransitions = new HashSet<>();  // all state transitions for ProtocolGenerator.role which are externally chosen
     boolean hasExternalChoice; // whether there are any externally chosen state transitions for ProtocolGenerator.role
     HashMap<Role, Boolean> isClientTo = new HashMap<>(); // for each targetRole, whether ProtocolGenerator.role sends first.
+    RunMethodPool runMethodPool;
 
     ProtocolGenerator(Job job, GProtoName gpn, Role role) throws ScribException {
         this.job = job;
@@ -60,6 +61,7 @@ class ProtocolGenerator {
         for (Operation operation : externalChoices)
             externalChoiceTransitions.addAll(operation.transitions.filter(StateTransition::isExternalChoice));
         processNames();
+        runMethodPool = new RunMethodPool(initialState, StringUtils.decapitalise(className));
     }
 
     void buildConnectionMaps(EState state, HashSet<EState> history) {
@@ -139,7 +141,7 @@ class ProtocolGenerator {
                 args.add("Utilities.parseInt(args[" + aa + "])");
         }
         mainMethod.appendStatement("setup(" + String.join(", ", args) + ");");
-        mainMethod.appendStatement("run();");
+        mainMethod.appendStatement(StringUtils.decapitalise(className) + "();");
         ArrayList<String> setupParams = new ArrayList<>();
         if (isClientTo.containsValue(false))
             setupParams.add("int port");
@@ -165,21 +167,31 @@ class ProtocolGenerator {
             setup.appendComment("@ ensures Perm(" + perm + ", 1);");
         setup.appendComment("@ ensures " + String.join(" && ", setupEnsuring) + ";");
         setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + "(" + String.join(", ", constructorParams) + ");");
-        MethodBuilder run = mainClass.appendMethod("public", true, "void", "run", new ArrayList<>(), "Exception");
-        run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
-        for (String perm : setupEnsuringPerms)
-            run.appendComment("@ context Perm(" + perm + ", 1);");
-        run.appendComment("@ requires " + String.join(" && ", setupEnsuring) + ";");
-        run.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + transitions.firstMatch(t -> t.targetState.isTerminal()).targetState.id + ";");
-        generateRunner(run, initialState);
+        generateRunMethods(mainClass);
         return mainClass.mapContentsToFileName("src\\");
     }
 
     /**
-     * Generate the run method of the main class.
-     * This method is used to actually run the scribble protocol, and will be equivalent to it.
+     * Generate the run methods of the main class.
+     * These methods are used to actually run the scribble protocol, and will be equivalent to it.
      */
-    void generateRunner(ControlBuilder control, EState state) {
+    void generateRunMethods(ClassBuilder mainClass) {
+        runMethodPool.fillPool();
+        for (RunMethod runMethod : runMethodPool) {
+            MethodBuilder run = mainClass.appendMethod("public", true, "void", runMethod.name, new ArrayList<>(), "Exception");
+            run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
+            run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
+            run.appendComment("@ requires " + StringUtils.decapitalise(className) + ".state == " + runMethod.head.id + ";");
+            run.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + runMethodPool.terminalState + ";");
+            generateRunMethod(run, runMethod.head);
+        }
+    }
+
+    /**
+     * Generate a run method of the main class.
+     * These methods are used to actually run the scribble protocol, and will be equivalent to it.
+     */
+    void generateRunMethod(ControlBuilder control, EState state) {
         ArrayList<StateTransition> enabledTransitions = transitions.filter(t -> t.originState == state);
         ArrayList<Operation> enabledOperations = operations.filter(o -> o.transitions.containsAny(enabledTransitions));
         if (enabledOperations.size() > 1)
@@ -192,20 +204,22 @@ class ProtocolGenerator {
                 ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (" + option + ")"));
                 String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
                 choice.appendStatement(StringUtils.decapitalise(className) + "." + op.getFullName() + "(" + params + ");");
-                if (transition.originState == transition.targetState)
-                    choice.appendStatement("run();");
+                RunMethod methodCall = runMethodPool.firstMatch(r -> r.head.id == transition.targetState.id);
+                if (methodCall == null)
+                    generateRunMethod(choice, transition.targetState);
                 else
-                    generateRunner(choice, transition.targetState);
+                    choice.appendStatement(methodCall.name + "();");
             }
         else if (enabledOperations.size() == 1) {
             Operation op = enabledOperations.first();
             String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
             control.appendStatement(StringUtils.decapitalise(className) + "." + op.getFullName() + "(" + params + ");");
             EState targetState = enabledTransitions.first().targetState;
-            if (targetState.id == initialState.id)
-                control.appendStatement("run();");
+            RunMethod methodCall = runMethodPool.firstMatch(r -> r.head.id == targetState.id);
+            if (methodCall == null)
+                generateRunMethod(control, targetState);
             else
-                generateRunner(control, targetState);
+                control.appendStatement(methodCall.name + "();");
         }
     }
 
