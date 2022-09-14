@@ -53,6 +53,7 @@ import org.scribble.util.ScribException;
 import org.scribble.util.ScribParserException;
 import org.scribble.util.ScribUtil;
 import scribblevercors.codegen.ScribbleVerCorsCodeGenerator;
+import scribblevercors.util.ArrayList;
 
 /**
  * A Scribble extension should override newCLFlags, newCLArgParser, newMain,
@@ -231,7 +232,17 @@ public class CommandLine
 	public static void main(String[] args)
 			throws CommandLineException, AntlrSourceException
 	{
-		new CommandLine(args).run();
+		ArrayList<String[]> allRunArgs = new ArrayList<>();
+		String[] terminatedArgs = Arrays.copyOf(args, args.length + 1);
+		terminatedArgs[args.length] = "&&";
+		int parameterStart = 0;
+		for (int aa = 0; aa < terminatedArgs.length; aa++)
+			if (terminatedArgs[aa].equals("&&")) {
+				allRunArgs.add(Arrays.copyOfRange(terminatedArgs, parameterStart, aa));
+				parameterStart = aa + 1;
+			}
+		for (String[] singleRunArgs : allRunArgs)
+			new CommandLine(singleRunArgs).run();
 	}
 
 	public void run() throws CommandLineException, 
@@ -393,22 +404,6 @@ public class CommandLine
 			if (schan)  // CHECKME: does not implicitly generate sess API?
 			{
 				Role self = checkRoleArg(jobc, fullname, args[1]);
-				if (cb)
-				{
-					CBEndpointApiGenerator3 cbgen = new CBEndpointApiGenerator3(job,
-							fullname, self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG));
-					Map<String, String> out = cbgen.build();
-					outputClasses(out, false);
-				}
-				else
-				{
-					Map<String, String> out = jgen.generateStateChannelApi(fullname,
-							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG));
-					outputClasses(out, false);
-					Map<String, String> skeletonOut = jgen.generateStateChannelApi(fullname,
-							self, hasFlag(CLFlags.STATECHAN_SUBTYPES_FLAG), true);
-					outputClasses(skeletonOut, true);
-				}
 				ScribbleVerCorsCodeGenerator.generateFiles(job, fullname, self, getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0], getUniqueFlagArgs(CLFlags.VERCORS_DIR_FLAG)[0]);
 			}
 		}
