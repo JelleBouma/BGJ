@@ -5,6 +5,7 @@ import org.scribble.core.job.Core;
 import org.scribble.core.job.CoreArgs;
 import org.scribble.core.job.CoreContext;
 import org.scribble.core.model.endpoint.EState;
+import org.scribble.core.model.endpoint.EStateKind;
 import org.scribble.core.model.endpoint.actions.EAction;
 import org.scribble.core.type.name.GProtoName;
 import org.scribble.core.type.name.Role;
@@ -31,7 +32,6 @@ class ProtocolGenerator {
     OperationPool operations = new OperationPool(); // all operations for ProtocolGenerator.role
     ArrayList<Operation> externalChoices; // all operations for ProtocolGenerator.role which can be externally chosen
     ArrayList<StateTransition> transitions = new ArrayList<>(); // all state transitions for ProtocolGenerator.role
-    HashSet<StateTransition> externalChoiceTransitions = new HashSet<>();  // all state transitions for ProtocolGenerator.role which are externally chosen
     boolean hasExternalChoice; // whether there are any externally chosen state transitions for ProtocolGenerator.role
     HashMap<Role, Boolean> isClientTo = new HashMap<>(); // for each targetRole, whether ProtocolGenerator.role sends first.
     RunMethodPool runMethodPool;
@@ -58,8 +58,6 @@ class ProtocolGenerator {
         allRoles.add(role);
         externalChoices = operations.filter(Operation::isExternalChoice);
         hasExternalChoice = !externalChoices.isEmpty();
-        for (Operation operation : externalChoices)
-            externalChoiceTransitions.addAll(operation.transitions.filter(StateTransition::isExternalChoice));
         processNames();
         runMethodPool = new RunMethodPool(initialState, StringUtils.decapitalise(className));
     }
@@ -100,7 +98,10 @@ class ProtocolGenerator {
                 constructorParams.add("String host" + role);
                 constructorParams.add("int port" + role);
             }
-        generateConstructor(classBuilder.createConstructor("public", constructorParams, "Exception"), verificationSkeleton);
+        if (verificationSkeleton)
+            generateConstructor(classBuilder.createConstructor("public", constructorParams), verificationSkeleton);
+        else
+            generateConstructor(classBuilder.createConstructor("public", constructorParams, "Exception"), verificationSkeleton);
         generatePayloadImports(classBuilder);
         if (!verificationSkeleton) {
             generateExecutionImports();
@@ -167,7 +168,8 @@ class ProtocolGenerator {
             setup.appendComment("@ ensures Perm(" + perm + ", 1);");
         setup.appendComment("@ ensures " + String.join(" && ", setupEnsuring) + ";");
         setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + "(" + String.join(", ", constructorParams) + ");");
-        generateRunMethods(mainClass);
+        setupEnsuringPerms.add(0, StringUtils.decapitalise(className));
+        generateRunMethods(mainClass, setupEnsuringPerms);
         return mainClass.mapContentsToFileName("src\\");
     }
 
@@ -175,15 +177,27 @@ class ProtocolGenerator {
      * Generate the run methods of the main class.
      * These methods are used to actually run the scribble protocol, and will be equivalent to it.
      */
-    void generateRunMethods(ClassBuilder mainClass) {
+    void generateRunMethods(ClassBuilder mainClass, ArrayList<String> permissions) {
         runMethodPool.fillPool();
         for (RunMethod runMethod : runMethodPool) {
             MethodBuilder run = mainClass.appendMethod("public", true, "void", runMethod.name, new ArrayList<>(), "Exception");
-            run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ", 1);");
-            run.appendComment("@ context Perm(" + StringUtils.decapitalise(className) + ".state, 1);");
+            for (String perm : permissions)
+                run.appendComment("@ context Perm(" + perm + ", 1);");
             run.appendComment("@ requires " + StringUtils.decapitalise(className) + ".state == " + runMethod.head.id + ";");
+            if (hasExternalChoice) {
+                ArrayList<String> choiceRequirements = externalChoices.convertAll(o -> ".EXTERNAL_CHOICE_" + o.getName().toUpperCase(Locale.ROOT) + " == " + o.id + ";");
+                for (String choiceRequirement : choiceRequirements)
+                    run.appendComment("@ requires " + StringUtils.decapitalise(className) + choiceRequirement);
+                ArrayList<StateTransition> enabledTransitions = transitions.filter(t -> t.originState == runMethod.head);
+                ArrayList<Operation> enabledOperations = operations.filter(o -> o.transitions.containsAny(enabledTransitions));
+                if (enabledOperations.size() == 1 && runMethod.head.getStateKind() == EStateKind.POLY_RECIEVE)
+                    run.appendComment("@ requires " + StringUtils.decapitalise(className) + ".choice == " + enabledOperations.first().id + ";");
+                else
+                    run.appendComment("@ requires " + StringUtils.decapitalise(className) + ".choice == -1;");
+                run.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".choice == -1;");
+            }
             run.appendComment("@ ensures " + StringUtils.decapitalise(className) + ".state == " + runMethodPool.terminalState + ";");
-            generateRunMethod(run, runMethod.head);
+            generateRunMethod(run, runMethod.head, false);
         }
     }
 
@@ -191,25 +205,32 @@ class ProtocolGenerator {
      * Generate a run method of the main class.
      * These methods are used to actually run the scribble protocol, and will be equivalent to it.
      */
-    void generateRunMethod(ControlBuilder control, EState state) {
+    void generateRunMethod(ControlBuilder control, EState state, boolean choiceVariable) {
         ArrayList<StateTransition> enabledTransitions = transitions.filter(t -> t.originState == state);
         ArrayList<Operation> enabledOperations = operations.filter(o -> o.transitions.containsAny(enabledTransitions));
-        if (enabledOperations.size() > 1)
+        if (enabledOperations.size() > 1) {
+            boolean externalChoice = enabledOperations.get(0).transitions.getMatch(t -> t.originState == state).isExternalChoice();
+            if (externalChoice) {
+                if (!choiceVariable)
+                    control.appendStatement("int externalChoice;");
+                control.appendStatement("externalChoice = " + StringUtils.decapitalise(className) + ".receiveExternalChoice();");
+            }
             for (int oo = 0; oo < enabledOperations.size(); oo++) {
                 Operation op = enabledOperations.get(oo);
                 StateTransition transition = op.transitions.getMatch(t -> t.originState == state);
                 String option = transition.isExternalChoice() ?
-                    (StringUtils.decapitalise(className) + ".receiveExternalChoice() == " + StringUtils.decapitalise(className) + ".EXTERNAL_CHOICE_" + op.getName().toUpperCase(Locale.ROOT)) :
-                    ("Utilities.random(" + enabledOperations.size() + ") == " + oo);
-                ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + ( oo == enabledOperations.size() - 1 ? "" : "if (" + option + ")"));
+                        ("externalChoice == " + StringUtils.decapitalise(className) + ".EXTERNAL_CHOICE_" + op.getName().toUpperCase(Locale.ROOT)) :
+                        ("Utilities.random(" + enabledOperations.size() + ") == " + oo);
+                ControlBuilder choice = control.appendControl((oo == 0 ? "" : "else ") + (oo == enabledOperations.size() - 1 ? "" : "if (" + option + ")"));
                 String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
                 choice.appendStatement(StringUtils.decapitalise(className) + "." + op.getFullName() + "(" + params + ");");
                 RunMethod methodCall = runMethodPool.firstMatch(r -> r.head.id == transition.targetState.id);
                 if (methodCall == null)
-                    generateRunMethod(choice, transition.targetState);
+                    generateRunMethod(choice, transition.targetState, choiceVariable);
                 else
                     choice.appendStatement(methodCall.name + "();");
             }
+        }
         else if (enabledOperations.size() == 1) {
             Operation op = enabledOperations.first();
             String params = (op.action.isSend() ? String.join(", ", op.payload.getDefaultValues()) : "");
@@ -217,7 +238,7 @@ class ProtocolGenerator {
             EState targetState = enabledTransitions.first().targetState;
             RunMethod methodCall = runMethodPool.firstMatch(r -> r.head.id == targetState.id);
             if (methodCall == null)
-                generateRunMethod(control, targetState);
+                generateRunMethod(control, targetState, choiceVariable);
             else
                 control.appendStatement(methodCall.name + "();");
         }
@@ -333,13 +354,22 @@ class ProtocolGenerator {
     void generateExternalChoiceReceive(boolean verificationSkeleton) {
         MethodBuilder method = classBuilder.appendMethod("public", "int", "receiveExternalChoice", new ArrayList<>(), "Exception");
         if (verificationSkeleton) {
+            ArrayList<String> requiredStates = new ArrayList<>();
+            ArrayList<String> ensuredResults = new ArrayList<>();
+            for (Operation operation : externalChoices) {
+                ArrayList<StateTransition> externalChoiceTransitions = new ArrayList<>();  // all state transitions for ProtocolGenerator.role which are externally chosen
+                externalChoiceTransitions.addAll(operation.transitions.filter(StateTransition::isExternalChoice));
+                ArrayList<String> originStates = externalChoiceTransitions.convertAll(t -> "state == " + t.originState.id);
+                requiredStates.add(String.join(" || ", originStates));
+                ArrayList<String> results = originStates.convertAll(o -> o + " && \\result == " + operation.id);
+                ensuredResults.add(String.join(" || ", results));
+                ControlBuilder choice = method.appendControl("if (" + String.join(" || ", originStates) + ")");
+                choice.appendStatement("choice = " + operation.id + ";");
+                choice.appendStatement("return " + operation.id + ";");
+            }
             method.appendComment("@ context Perm(state, 1) ** Perm(choice, 1);");
-            HashSet<String> startingStates = externalChoiceTransitions.convertAll(t -> "state == " + t.originState.id);
-            method.appendComment("@ requires choice == -1 && (" + String.join(" || ", startingStates) +");");
-            ArrayList<String> results = externalChoices.convertAll(o -> "\\result == " + o.id);
-            method.appendComment("@ ensures (" + String.join(" || ", results) + ") && \\old(state) == state && \\result == choice;");
-            method.appendStatement("choice = " + externalChoices.first().id + ";");
-            method.appendStatement("return " + externalChoices.first().id + ";");
+            method.appendComment("@ requires choice == -1 && (" + String.join(" || ", requiredStates) +");");
+            method.appendComment("@ ensures (" + String.join(" || ", ensuredResults) + ") && \\old(state) == state && \\result == choice;");
         } else {
             method.appendStatement("chosenMessage = receiveScribMessage(" + externalChoices.first().action.peer + ");");
             method.appendStatement("String choice = chosenMessage.op.getLastElement();");
@@ -404,7 +434,7 @@ class ProtocolGenerator {
             HashSet<String> preconditions = operation.transitions.convertAll(t -> "state == " + t.originState.id + (t.isExternalChoice() ? choiceRequirement : ""));
             HashSet<String> postconditions = operation.transitions.convertAll(t -> "\\old(state) == " + t.originState.id + " && state == " + t.targetState.id);
             method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
-            method.appendComment("@ ensures " + String.join(" || ", postconditions) + choiceGuarantee + nonNullCondition + ";");
+            method.appendComment("@ ensures (" + String.join(" || ", postconditions) + ")" + choiceGuarantee + nonNullCondition + ";");
         }
         generateStateChange(operation, method, true);
         if (operation.isExternalChoice())
