@@ -41,7 +41,7 @@ class RunMethodPool extends ArrayList<RunMethod> {
             }
             else if (statesTraversed.contains(succ.id))
                 add(new RunMethod(succ, protocolName + "Aux" + ++auxCounter));
-            else
+            else if (initialState.id != succ.id)
                 recursiveFill(succ, statesTraversed);
     }
 
