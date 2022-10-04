@@ -392,21 +392,9 @@ public class CommandLine
 	{
 		JobContext jobc = job.getContext();
 		JEndpointApiGenerator jgen = new JEndpointApiGenerator(job);  // FIXME: refactor (generalise -- use new API)
-		{
-			GProtoName fullname = checkGlobalProtocolArg(jobc, args[0]);
-			if (sess)
-			{
-				Map<String, String> out = jgen.generateSessionApi(fullname, false);
-				outputClasses(out, false);
-				Map<String, String> skeletonOut = jgen.generateSessionApi(fullname, true);
-				outputClasses(skeletonOut, true);
-			}
-			if (schan)  // CHECKME: does not implicitly generate sess API?
-			{
-				Role self = checkRoleArg(jobc, fullname, args[1]);
-				ScribbleVerCorsCodeGenerator.generateFiles(job, fullname, self, getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0], getUniqueFlagArgs(CLFlags.VERCORS_DIR_FLAG)[0]);
-			}
-		}
+		GProtoName fullname = checkGlobalProtocolArg(jobc, args[0]);
+		Role self = checkRoleArg(jobc, fullname, args[1]);
+		ScribbleVerCorsCodeGenerator.generateFiles(job, fullname, self, getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0], getUniqueFlagArgs(CLFlags.VERCORS_DIR_FLAG)[0]);
 	}
 
   // Endpoint graphs are "inlined", so only a single graph is built (cf. projection output)
@@ -459,33 +447,6 @@ public class CommandLine
 					// Should be caught by some earlier failure
 		}
 		return model;
-	}
-
-	// classes: filepath -> class source
-	protected void outputClasses(Map<String, String> classes, boolean verCorsSkeleton)
-			throws ScribException
-	{
-		Consumer<String> f;
-		if (hasFlag(CLFlags.API_OUTPUT_DIR_FLAG))
-		{
-			String dir = getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0];
-			f = path -> { ScribUtil.handleLambdaScribbleException(() ->
-					{
-						String tmp = dir + (verCorsSkeleton ? "\\verification-skeleton\\" : "\\") + path;
-						if (hasFlag(CLFlags.VERBOSE_FLAG))
-						{
-							System.out.println("[DEBUG] Writing to: " + tmp);
-						}
-						ScribUtil.writeToFile(tmp, classes.get(path));
-						return null;
-					});
-			};
-		}
-		else
-		{
-			f = path -> { System.out.println(path + ":\n" + classes.get(path)); };
-		}
-		classes.keySet().forEach(f);
 	}
 
 	protected static void runDot(String dot, String png)
