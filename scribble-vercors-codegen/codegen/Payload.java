@@ -51,7 +51,7 @@ class Payload {
                 contents.add(new Arg("float", "0.0f", name));
                 break;
             case "java.lang.Long":
-                contents.add(new Arg("long", "0L", name));
+                contents.add(new Arg("long", "0", name));
                 break;
             case "java.lang.Double":
                 contents.add(new Arg("double", "0.0d", name));
