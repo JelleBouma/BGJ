@@ -48,7 +48,6 @@ public class ScribModuleLoader extends DefaultModuleLoader
 		Resource res = DirectoryResourceLocator.getResourceByFullPath(mainpath);
 				// Hardcoded to DirectoryResourceLocator
 		Module m = this.antlr.parse(res.getInputStream());  // Does del decoration
-		ScribModuleLoader.checkMainModuleName(mainpath, m);
 		ModuleName fullname = m.getFullModuleName();
 		Pair<Resource, Module> cached = super.loadModule(fullname);
 		if (cached != null)
