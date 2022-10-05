@@ -1,0 +1,2 @@
+robocopy src\pingpong verification-skeleton\pingpong PingpongCMain.java
+start "Verifying Scribble Protocol" W:\vercors-1.4.0-SNAPSHOT/bin/vercors --silicon verification-skeleton\pingpong\PingpongC.java verification-skeleton\pingpong\Utilities.java verification-skeleton\pingpong\PingpongCMain.java
