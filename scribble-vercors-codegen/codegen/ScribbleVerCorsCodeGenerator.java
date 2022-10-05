@@ -7,6 +7,7 @@ import org.scribble.util.ScribException;
 import org.scribble.util.ScribUtil;
 import scribblevercors.util.StringUtils;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -29,8 +30,8 @@ public class ScribbleVerCorsCodeGenerator {
     private static HashMap<String, String> generateBat(Set<String> classFiles, String mainFile, String vercorsDir, Role role) {
         HashMap<String, String> res = new HashMap<>();
         res.put("verify" + StringUtils.capitalise(role.toString()) + ".bat",
-                "robocopy " + mainFile.substring(0, mainFile.lastIndexOf('\\')) + " verification-skeleton\\" + mainFile.substring(4, mainFile.lastIndexOf('\\')) + " " + mainFile.substring(mainFile.lastIndexOf('\\') + 1) + "\r\n" +
-                "start \"Verifying Scribble Protocol\" " + vercorsDir + "/bin/vercors --silicon " + String.join(" ", classFiles)+ " verification-skeleton\\" + mainFile.substring(4));
+                "robocopy " + mainFile.substring(0, mainFile.lastIndexOf(File.separatorChar)) + " verification-skeleton/" + mainFile.substring(4, mainFile.lastIndexOf(File.separatorChar)) + " " + mainFile.substring(mainFile.lastIndexOf(File.separatorChar) + 1) + "\r\n" +
+                "start \"Verifying Scribble Protocol\" " + vercorsDir + File.separator + "bin" + File.separator + "vercors --silicon " + String.join(" ", classFiles)+ " verification-skeleton" + File.separator + mainFile.substring(4));
         return res;
     }
 

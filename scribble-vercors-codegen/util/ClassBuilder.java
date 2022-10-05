@@ -1,5 +1,6 @@
 package scribblevercors.util;
 
+import java.io.File;
 import java.util.HashMap;
 
 public class ClassBuilder {
@@ -104,7 +105,7 @@ public class ClassBuilder {
 
     public HashMap<String, String> mapContentsToFileName(String directory) {
         HashMap<String, String> res = new HashMap<>();
-        res.put(directory + pkg.replace('.', '\\') + (pkg.isEmpty() ? "" : "\\") + name + ".java", toString());
+        res.put(directory + pkg.replace('.', File.separatorChar) + (pkg.isEmpty() ? "" : File.separator) + name + ".java", toString());
         return res;
     }
 
