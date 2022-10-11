@@ -37,7 +37,7 @@ public class ScribbleVerCorsCodeGenerator {
 
     private static void outputFiles(HashMap<String, String> files, String dir) throws ScribException {
         for (String file : files.keySet())
-            ScribUtil.writeToFile(dir + "\\" + file, files.get(file));
+            ScribUtil.writeToFile(dir + File.separator + file, files.get(file));
     }
 
 
