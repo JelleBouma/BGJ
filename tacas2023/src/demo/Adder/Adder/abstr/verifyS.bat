@@ -1,0 +1,2 @@
+robocopy demo/Adder/Adder verification-skeleton//Adder/Adder AdderSMain.java
+start "Verifying Scribble Protocol" /bin/vercors --silicon demo/Adder/Adder/abstr/Utilities.java demo/Adder/Adder/abstr/AddPayload.java demo/Adder/Adder/abstr/AdderS.java verification-skeleton//Adder/Adder/AdderSMain.java
