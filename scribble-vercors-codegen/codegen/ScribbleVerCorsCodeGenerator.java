@@ -21,15 +21,16 @@ public class ScribbleVerCorsCodeGenerator {
         HashMap<String, String> verificationClasses = generator.generateClasses(true);
         verificationClasses.putAll(generator.generateUtilities(true));
         HashMap<String, String> main = generator.generateMainClass();
-        files.putAll(generateBat(verificationClasses.keySet(), main.keySet().stream().findAny().get(), vercorsDir, role));
+        files.putAll(generateBat(verificationClasses.keySet(), main.keySet().stream().findAny().get(), vercorsDir, gpn, role));
         files.putAll(main);
         files.putAll(verificationClasses);
         outputFiles(files, dir);
     }
 
-    private static HashMap<String, String> generateBat(Set<String> classFiles, String mainFile, String vercorsDir, Role role) {
+    private static HashMap<String, String> generateBat(Set<String> classFiles, String mainFile, String vercorsDir, GProtoName gpn, Role role) {
         HashMap<String, String> res = new HashMap<>();
-        res.put("verify" + StringUtils.capitalise(role.toString()) + ".bat",
+        String dir = gpn.toString().replace(".", File.separator) + File.separator + "abstr" + File.separator;
+        res.put(dir + "verify" + StringUtils.capitalise(role.toString()) + ".bat",
                 "robocopy " + mainFile.substring(0, mainFile.lastIndexOf(File.separatorChar)) + " verification-skeleton/" + mainFile.substring(4, mainFile.lastIndexOf(File.separatorChar)) + " " + mainFile.substring(mainFile.lastIndexOf(File.separatorChar) + 1) + "\r\n" +
                 "start \"Verifying Scribble Protocol\" " + vercorsDir + File.separator + "bin" + File.separator + "vercors --silicon " + String.join(" ", classFiles)+ " verification-skeleton" + File.separator + mainFile.substring(4));
         return res;

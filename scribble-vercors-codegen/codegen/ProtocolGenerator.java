@@ -13,6 +13,7 @@ import org.scribble.job.Job;
 import org.scribble.util.ScribException;
 import scribblevercors.util.*;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -75,9 +76,9 @@ class ProtocolGenerator {
     void processNames() {
         className = StringUtils.capitalise(gpn.getSimpleName().toString()) + StringUtils.capitalise(role.toString());
         ArrayList<String> pkgElements = new ArrayList<>(gpn.getElements());
-        pkgElements.remove(pkgElements.size() - 1); // remove the last two elements as these contain the protocol name
-        pkgElements.remove(pkgElements.size() - 1);
-        pkg = String.join(".", pkgElements).toLowerCase(Locale.ROOT);
+//        pkgElements.remove(pkgElements.size() - 1); // remove the last two elements as these contain the protocol name
+//        pkgElements.remove(pkgElements.size() - 1);
+        pkg = String.join(".", pkgElements);//.toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -87,6 +88,12 @@ class ProtocolGenerator {
      */
     HashMap<String, String> generateClasses(boolean verificationSkeleton) {
         String dir = verificationSkeleton ? "verification-skeleton\\" : "src\\";
+
+        // Sung edit
+        dir = "";
+        String basepkg = pkg;
+        pkg += verificationSkeleton ? ".abstr" : ".concr";
+
         HashMap<String, String> res = new HashMap<>();
         classBuilder = new ClassBuilder(pkg, "public", className);
         generateAttributes(verificationSkeleton);
@@ -115,6 +122,10 @@ class ProtocolGenerator {
                 res.putAll(operation.payload.getPayloadClass().mapContentsToFileName(dir));
         }
         res.putAll(classBuilder.mapContentsToFileName(dir));
+
+        // Sung edit
+        pkg = basepkg;
+
         return res;
     }
 
@@ -124,6 +135,7 @@ class ProtocolGenerator {
      */
     HashMap<String, String> generateMainClass() {
         ClassBuilder mainClass = new ClassBuilder(pkg, "public", className + "Main");
+        mainClass.appendImport(pkg + ".concr.*");
         generatePayloadImports(mainClass);
         mainClass.appendAttribute("", className, StringUtils.decapitalise(className), true, false);
         MethodBuilder mainMethod = mainClass.appendMethod("public", true, "void", "main", new ArrayList<>("String[] args"), "Exception");
@@ -170,7 +182,7 @@ class ProtocolGenerator {
         setup.appendStatement(StringUtils.decapitalise(className) + " = new " + className + "(" + String.join(", ", constructorParams) + ");");
         setupEnsuringPerms.add(0, StringUtils.decapitalise(className));
         generateRunMethods(mainClass, setupEnsuringPerms);
-        return mainClass.mapContentsToFileName("src\\");
+        return mainClass.mapContentsToFileName("");
     }
 
     /**
@@ -250,6 +262,11 @@ class ProtocolGenerator {
      * @return A hashmap of file name and content of the utilities class.
      */
     HashMap<String, String> generateUtilities(boolean verificationSkeleton) {
+
+        // Sung edit
+        String basepkg = pkg;
+        pkg += verificationSkeleton ? ".abstr" : ".concr";
+
         ClassBuilder util = new ClassBuilder(pkg, "public", "Utilities");
         MethodBuilder random = util.appendMethod("public", true, "int", "random", new ArrayList<>("int bound"), "");
         MethodBuilder parseInt = util.appendMethod("public", true, "int", "parseInt", new ArrayList<>("String str"), "");
@@ -263,7 +280,13 @@ class ProtocolGenerator {
             random.appendStatement("return (int)(Math.random() * bound);");
             parseInt.appendStatement("return Integer.parseInt(str);");
         }
-        return util.mapContentsToFileName(verificationSkeleton ? "verification-skeleton\\" : "src\\");
+
+        // Sung edit
+        HashMap<String, String> result = util.mapContentsToFileName("");
+        pkg = basepkg;
+        return result;
+
+        //return util.mapContentsToFileName(verificationSkeleton ? "verification-skeleton\\" : "src\\");
     }
 
     /**
@@ -367,6 +390,7 @@ class ProtocolGenerator {
                 choice.appendStatement("choice = " + operation.id + ";");
                 choice.appendStatement("return " + operation.id + ";");
             }
+            method.appendStatement("throw new Exception();");
             method.appendComment("@ context Perm(state, 1) ** Perm(choice, 1);");
             method.appendComment("@ requires choice == -1 && (" + String.join(" || ", requiredStates) +");");
             method.appendComment("@ ensures (" + String.join(" || ", ensuredResults) + ") && \\old(state) == state && \\result == choice;");
@@ -402,6 +426,7 @@ class ProtocolGenerator {
     }
 
     void generateExecutableCode(Operation operation, MethodBuilder method) {
+        generateContract(operation, method);
         if (operation.payload.isSend) {
             ArrayList<String> parameters = new ArrayList<>(operation.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
             parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
@@ -421,6 +446,15 @@ class ProtocolGenerator {
     }
 
     void generateVerification(Operation operation, MethodBuilder method) {
+        generateContract(operation, method);
+        generateStateChange(operation, method, true);
+        if (operation.isExternalChoice())
+            method.appendStatement("choice = -1;");
+        if (!operation.getReturnType().equals("void"))
+            method.appendStatement(operation.payload.getDefaultReturnStatement());
+    }
+
+    void generateContract(Operation operation, MethodBuilder method) {
         method.appendComment("@ context Perm(state, 1)" + (operation.isExternalChoice() ? " ** Perm(choice, 1);" : ";"));
         String nonNullCondition = operation.payload.name.equals("") ? "" : " && \\result != null";
         String choiceRequirement = operation.isExternalChoice() ? " && choice == " + operation.id : "";
@@ -436,11 +470,6 @@ class ProtocolGenerator {
             method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
             method.appendComment("@ ensures (" + String.join(" || ", postconditions) + ")" + choiceGuarantee + nonNullCondition + ";");
         }
-        generateStateChange(operation, method, true);
-        if (operation.isExternalChoice())
-            method.appendStatement("choice = -1;");
-        if (!operation.getReturnType().equals("void"))
-            method.appendStatement(operation.payload.getDefaultReturnStatement());
     }
 
     void generateStateChange(Operation operation, MethodBuilder method, boolean vercorsSkeleton) {
