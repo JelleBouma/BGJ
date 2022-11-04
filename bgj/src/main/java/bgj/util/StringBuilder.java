@@ -1,4 +1,4 @@
-package scribblevercors.util;
+package bgj.util;
 
 public class StringBuilder {
     java.lang.StringBuilder internal = new java.lang.StringBuilder();

@@ -1,4 +1,4 @@
-package scribblevercors.util;
+package bgj.util;
 
 import java.util.Arrays;
 import java.util.Collection;

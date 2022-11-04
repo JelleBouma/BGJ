@@ -1,7 +1,7 @@
-package scribblevercors.codegen;
+package bgj.codegen;
 
 import org.scribble.core.model.endpoint.EState;
-import scribblevercors.util.ArrayList;
+import bgj.util.ArrayList;
 
 import java.util.List;
 

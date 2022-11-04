@@ -1,4 +1,4 @@
-package scribblevercors.util;
+package bgj.util;
 
 import java.io.File;
 import java.util.HashMap;

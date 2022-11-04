@@ -1,4 +1,4 @@
-package scribblevercors.codegen;
+package bgj.codegen;
 
 public class Arg {
     String type;

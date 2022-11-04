@@ -1,11 +1,11 @@
-package scribblevercors.codegen;
+package bgj.codegen;
 
 import org.scribble.core.type.name.GProtoName;
 import org.scribble.core.type.name.Role;
 import org.scribble.job.Job;
 import org.scribble.util.ScribException;
 import org.scribble.util.ScribUtil;
-import scribblevercors.util.StringUtils;
+import bgj.util.StringUtils;
 
 import java.io.File;
 import java.util.HashMap;

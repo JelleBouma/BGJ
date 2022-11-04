@@ -1,4 +1,4 @@
-package scribblevercors.codegen;
+package bgj.codegen;
 
 import org.scribble.core.model.endpoint.EState;
 

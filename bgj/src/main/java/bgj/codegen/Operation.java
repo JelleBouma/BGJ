@@ -1,11 +1,11 @@
-package scribblevercors.codegen;
+package bgj.codegen;
 
 import org.scribble.core.model.endpoint.EState;
 import org.scribble.core.model.endpoint.actions.EAction;
 import org.scribble.core.type.name.Role;
-import scribblevercors.util.ArrayList;
-import scribblevercors.util.HashSet;
-import scribblevercors.util.StringUtils;
+import bgj.util.ArrayList;
+import bgj.util.HashSet;
+import bgj.util.StringUtils;
 
 public class Operation {
 

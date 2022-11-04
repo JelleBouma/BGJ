@@ -1,9 +1,9 @@
-package scribblevercors.codegen;
+package bgj.codegen;
 
 import org.scribble.core.model.endpoint.actions.EAction;
 import org.scribble.core.type.name.DataName;
 import org.scribble.core.type.name.PayElemType;
-import scribblevercors.util.*;
+import bgj.util.*;
 
 class Payload {
     String name; // Has the class name of the payload if applicable, otherwise an empty string.
