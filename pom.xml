@@ -61,6 +61,12 @@
 			</dependency>
 
 			<dependency>
+				<groupId>org.scribble</groupId>
+				<artifactId>bgj</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
 				<groupId>org.antlr</groupId>
 				<artifactId>antlr-runtime</artifactId>
 				<version>${antlr.version}</version>
@@ -105,7 +111,8 @@
 		<module>scribble-test</module>
 		<module>scribble-dist</module>
 		<module>scribble-demos</module>
-	</modules>
+        <module>bgj</module>
+    </modules>
 
 	<properties>
 		<antlr.version>3.4</antlr.version>

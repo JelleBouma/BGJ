@@ -32,12 +32,20 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>org.scribble</groupId>
+			<artifactId>bgj</artifactId>
+		</dependency>
+
+		<!--
         <dependency>
             <groupId>org.scribble</groupId>
             <artifactId>parent</artifactId>
             <version>0.5.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
+        -->
     </dependencies>
 
 	<parent>
