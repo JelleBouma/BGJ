@@ -23,14 +23,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.scribble.ast.Module;
 import org.scribble.ast.ProtoDecl;
 import org.scribble.ast.global.GProtoDecl;
 import org.scribble.codegen.java.JEndpointApiGenerator;
-import org.scribble.codegen.java.callbackapi.CBEndpointApiGenerator3;
 import org.scribble.core.job.CoreArgs;
 import org.scribble.core.job.CoreContext;
 import org.scribble.core.model.endpoint.EGraph;
@@ -52,8 +50,8 @@ import org.scribble.util.RuntimeScribException;
 import org.scribble.util.ScribException;
 import org.scribble.util.ScribParserException;
 import org.scribble.util.ScribUtil;
-import scribblevercors.codegen.ScribbleVerCorsCodeGenerator;
-import scribblevercors.util.ArrayList;
+import bgj.codegen.ScribbleVerCorsCodeGenerator;
+import bgj.util.ArrayList;
 
 /**
  * A Scribble extension should override newCLFlags, newCLArgParser, newMain,

@@ -30,13 +30,17 @@ public class ScribbleVerCorsCodeGenerator {
     private static HashMap<String, String> generateBat(Set<String> classFiles, String mainFile, String vercorsDir, GProtoName gpn, Role role) {
         HashMap<String, String> res = new HashMap<>();
 
-        res.put(gpn.toString().replace(".", File.separator) + File.separator + "verify.sh",
-                "");
+        res.put(gpn.toString().replace(".", "/") + "/verify.sh",
+                "cp -r abstr tmp\n" +
+                "cp $@ tmp\n" +
+                "sed -i '.bak' '/^package/d' tmp/*.java\n" +
+                vercorsDir + "/bin/vercors --silicon tmp/*.java\n" +
+                "rm -r tmp\n");
 
-        String dir = gpn.toString().replace(".", File.separator) + File.separator + "abstr" + File.separator;
-        res.put(dir + "verify" + StringUtils.capitalise(role.toString()) + ".bat",
-                "robocopy " + mainFile.substring(0, mainFile.lastIndexOf(File.separatorChar)) + " verification-skeleton/" + mainFile.substring(4, mainFile.lastIndexOf(File.separatorChar)) + " " + mainFile.substring(mainFile.lastIndexOf(File.separatorChar) + 1) + "\r\n" +
-                "start \"Verifying Scribble Protocol\" " + vercorsDir + File.separator + "bin" + File.separator + "vercors --silicon " + String.join(" ", classFiles)+ " verification-skeleton" + File.separator + mainFile.substring(4));
+//        String dir = gpn.toString().replace(".", File.separator) + File.separator + "abstr" + File.separator;
+//        res.put(dir + "verify" + StringUtils.capitalise(role.toString()) + ".bat",
+//                "robocopy " + mainFile.substring(0, mainFile.lastIndexOf(File.separatorChar)) + " verification-skeleton/" + mainFile.substring(4, mainFile.lastIndexOf(File.separatorChar)) + " " + mainFile.substring(mainFile.lastIndexOf(File.separatorChar) + 1) + "\r\n" +
+//                "start \"Verifying Scribble Protocol\" " + vercorsDir + File.separator + "bin" + File.separator + "vercors --silicon " + String.join(" ", classFiles)+ " verification-skeleton" + File.separator + mainFile.substring(4));
         return res;
     }
 
