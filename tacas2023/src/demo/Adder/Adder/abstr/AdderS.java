@@ -39,6 +39,7 @@ public class AdderS
 	//@ context Perm(state, 1) ** Perm(choice, 1);
 	//@ requires state == 14 && choice == 0;
 	//@ ensures state == 16 && choice == -1 && \result != null;
+	//@ ensures \result.permAll();
 	public AddPayload addFromC() throws Exception
 	{
 		state = 16;
