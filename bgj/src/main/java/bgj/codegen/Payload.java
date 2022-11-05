@@ -5,6 +5,8 @@ import org.scribble.core.type.name.DataName;
 import org.scribble.core.type.name.PayElemType;
 import bgj.util.*;
 
+import java.util.stream.Collectors;
+
 class Payload {
     String name; // Has the class name of the payload if applicable, otherwise an empty string.
     boolean isSend;
@@ -115,6 +117,14 @@ class Payload {
             cb.appendAttribute("public", arg.type, arg.name);
             constructor.appendStatement("this." + arg.name + " = " + arg.name + ";");
         }
+
+        constructor.appendComment("@ inline resource permAll() = " +
+                contents.stream()
+                        .map(arg -> "Perm(" + arg.name + ", 1)")
+                        .collect(Collectors.joining(" ** ")) +
+                ";");
+        constructor.appendComment("@ ensures permAll();");
+
         return cb;
     }
 

@@ -469,6 +469,11 @@ class ProtocolGenerator {
             method.appendComment("@ requires " + String.join(" || ", preconditions) + ";");
             method.appendComment("@ ensures (" + String.join(" || ", postconditions) + ")" + choiceGuarantee + nonNullCondition + ";");
         }
+
+        if (!operation.payload.name.equals("")) {
+            method.appendComment("@ ensures \\result.permAll();");
+        }
+
     }
 
     void generateStateChange(Operation operation, MethodBuilder method, boolean vercorsSkeleton) {
