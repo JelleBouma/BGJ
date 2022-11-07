@@ -1,0 +1,20 @@
+module eval.verif.Negotiate;
+
+data <java> "java.lang.Integer" from "rt.jar" as Int;
+
+global protocol Negotiate(role C, role P) {
+	Propose(Int) from C to P;
+	do NegotiateAux(P, C);
+}
+
+aux global protocol NegotiateAux(role A, role B) {
+	choice at A {
+		Accept() from A to B;
+		Confirm() from B to A;
+	} or {
+		Reject() from A to B;
+	} or {
+		Propose(Int) from A to B;
+		do NegotiateAux(B, A);
+	}
+}

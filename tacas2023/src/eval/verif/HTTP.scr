@@ -1,12 +1,4 @@
-/**
- * Assuming scribblec.sh in scribble-java root directory:
- *
- * ./scribblec.sh -d scribble-demos/scrib/bettybook/src scribble-demos/scrib/bettybook/src/bettybook/http/longv/HttpLong.scr -api Http C
- */
-
-
-module bettybook.http.longv.HttpLong;
-
+module eval.verif.HTTP;
 
 sig <java> "bettybook.http.longv.message.client.RequestLine"
 		from "bettybook/http/longv/message/RequestLine.java"
@@ -47,7 +39,6 @@ sig <java> "bettybook.http.longv.message.client.Connection"
 sig <java> "bettybook.http.longv.message.client.UpgradeInsecureRequests"
 		from "bettybook/http/longv/message/UpgradeInsecureRequests.java"
 		as UpgradeIR;  // Upgrade-Insecure-Requests: 1
-
 
 sig <java> "bettybook.http.longv.message.server.HttpVersion"
 		from "bettybook/http/longv/message/HttpVersion.java"
@@ -101,8 +92,7 @@ sig <java> "bettybook.http.longv.message.server.Via"
 		from "bettybook/http/longv/message/Via.java"
 		as Via;  // Via: 1.1 www.doc.ic.ac.uk
 
-
-global protocol Http(role C, role S) {
+global protocol HTTP(role C, role S) {
 	do Request(C, S);
 	do Response(C, S);
 }
