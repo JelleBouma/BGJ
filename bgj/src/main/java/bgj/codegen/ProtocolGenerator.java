@@ -47,7 +47,7 @@ class ProtocolGenerator {
             ? corec.getMinimisedEGraph(gpn, role).init
             : corec.getEGraph(gpn, role).init;
         buildConnectionMaps(initialState, new HashSet<>());
-        System.out.println(initialState.toAut());
+        //System.out.println(initialState.toAut());
         operations.fillPool(initialState);
         operations.distinguishOperations();
         for (Operation operation : operations)

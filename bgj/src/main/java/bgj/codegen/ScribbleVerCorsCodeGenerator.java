@@ -30,12 +30,26 @@ public class ScribbleVerCorsCodeGenerator {
     private static HashMap<String, String> generateBat(Set<String> classFiles, String mainFile, String vercorsDir, GProtoName gpn, Role role) {
         HashMap<String, String> res = new HashMap<>();
 
-        res.put(gpn.toString().replace(".", "/") + "/verify.sh",
-                "cp -r abstr tmp\n" +
-                "cp $@ tmp\n" +
-                "sed -i '.bak' '/^package/d' tmp/*.java\n" +
-                vercorsDir + "/bin/vercors --silicon tmp/*.java\n" +
-                "rm -r tmp\n");
+        // vercorsDir   = JAVA_HOME? ; VERCORS_HOME?
+        // JAVA_HOME    = "java:" <path>
+        // VERCORS_HOME = "vercors:" <path>
+        String[] strings = vercorsDir.split(";");
+        String javaHome = null;
+        String vercorsHome = null;
+        for (String s : strings) {
+            javaHome = s.startsWith("java:") ? s.substring(s.indexOf(":") + 1) : javaHome;
+            vercorsHome = s.startsWith("vercors:") ? s.substring(s.indexOf(":") + 1) : vercorsHome;
+        }
+
+        String script = "";
+        script += "cp -r abstr tmp\n";
+        script += "cp $@ tmp\n";
+        script += "sed -i.bak '/^package/d' tmp/*.java\n";
+        script += javaHome == null ? "" : ("export JAVA_HOME=" + javaHome + "\n");
+        script += vercorsHome + "/bin/vercors --silicon tmp/*.java\n";
+        script += "rm -r tmp\n";
+
+        res.put(gpn.toString().replace(".", "/") + "/verify.sh", script);
 
 //        String dir = gpn.toString().replace(".", File.separator) + File.separator + "abstr" + File.separator;
 //        res.put(dir + "verify" + StringUtils.capitalise(role.toString()) + ".bat",
