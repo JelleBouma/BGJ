@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import org.scribble.ast.Module;
 import org.scribble.ast.ProtoDecl;
 import org.scribble.ast.global.GProtoDecl;
-import org.scribble.codegen.java.JEndpointApiGenerator;
 import org.scribble.core.job.CoreArgs;
 import org.scribble.core.job.CoreContext;
 import org.scribble.core.model.endpoint.EGraph;
@@ -210,17 +209,12 @@ public class CommandLine
 		switch (task.left)
 		{
 			case CLFlags.SESSION_API_GEN_FLAG:
-				outputEndpointApi(job, task.right, true, false, false);
-				break;
-			case CLFlags.STATECHAN_API_GEN_FLAG:
-				outputEndpointApi(job, task.right, false, true, false);
-				break;
-			case CLFlags.API_GEN_FLAG:
-				outputEndpointApi(job, task.right, true, true, false);
-				break;
 			case CLFlags.EVENTDRIVEN_API_GEN_FLAG:
-				outputEndpointApi(job, task.right, false, true, true);  // FIXME: currently need to gen sess API separately?
+			case CLFlags.API_GEN_FLAG:
+			case CLFlags.STATECHAN_API_GEN_FLAG:
+				outputEndpointApi(job, task.right);
 				break;
+			// FIXME: currently need to gen sess API separately?
 			default:
 				throw new RuntimeException("Shouldn't get here: " + task.left);
 					// Bad flag should be caught by CLArgParser
@@ -385,11 +379,9 @@ public class CommandLine
 		}
 	}
 
-	private void outputEndpointApi(Job job, String[] args, boolean sess,
-			boolean schan, boolean cb) throws ScribException, CommandLineException
+	private void outputEndpointApi(Job job, String[] args) throws ScribException, CommandLineException
 	{
 		JobContext jobc = job.getContext();
-		JEndpointApiGenerator jgen = new JEndpointApiGenerator(job);  // FIXME: refactor (generalise -- use new API)
 		GProtoName fullname = checkGlobalProtocolArg(jobc, args[0]);
 		Role self = checkRoleArg(jobc, fullname, args[1]);
 		ScribbleVerCorsCodeGenerator.generateFiles(job, fullname, self, getUniqueFlagArgs(CLFlags.API_OUTPUT_DIR_FLAG)[0], getUniqueFlagArgs(CLFlags.VERCORS_DIR_FLAG)[0]);
