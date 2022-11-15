@@ -1,10 +1,10 @@
 [![Build Status][ci-img]][ci] [![Released Version][maven-img]][maven]
 
-# Java Tooling for Scribble
-
-This project provides Java tooling/libraries for the Scribble multi-party
-protocol definition language.
-
+# Java API and Static Verification Annotation Generator
+BGJ uses Java tooling/libraries for the Scribble multi-party protocol definition language.
+More specifically BGJ is an edit of Scribble-Java (https://github.com/scribble/scribble-java) using a new code generation module.
+This new code generation module generates annotations which VerCors can verify.
+This generated code is faster compared to Scribble-Java due to no objects being created for each message passing.
 
 ## Building from source
 

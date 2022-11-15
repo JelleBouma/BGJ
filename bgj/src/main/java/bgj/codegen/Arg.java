@@ -1,5 +1,8 @@
 package bgj.codegen;
 
+/**
+ * An Arg object holds an argument for a message passing action, it is a part of the Payload.
+ */
 public class Arg {
     String type;
     String defaultValue;

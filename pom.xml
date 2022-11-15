@@ -105,7 +105,6 @@
 		<module>scribble-runtime</module>
 		<module>scribble-ast</module>
 		<module>scribble-parser</module>
-		<module>scribble-codegen</module>
 		<module>scribble-main</module>
 		<module>scribble-cli</module>
 		<module>scribble-test</module>

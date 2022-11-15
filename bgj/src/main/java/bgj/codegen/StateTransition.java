@@ -5,6 +5,9 @@ import org.scribble.core.model.endpoint.EStateKind;
 
 import java.util.Objects;
 
+/**
+ * A transition from a state to another state, part of an Operation.
+ */
 class StateTransition {
     EState originState;
     EState targetState;

@@ -21,10 +21,6 @@
 		</dependency>
 		<dependency>
 			<groupId>org.scribble</groupId>
-			<artifactId>scribble-codegen</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.scribble</groupId>
 			<artifactId>scribble-main</artifactId>
 		</dependency>
 
@@ -37,8 +33,12 @@
 			<groupId>org.scribble</groupId>
 			<artifactId>bgj</artifactId>
 		</dependency>
+        <dependency>
+            <groupId>org.scribble</groupId>
+            <artifactId>bgj</artifactId>
+        </dependency>
 
-		<!--
+        <!--
         <dependency>
             <groupId>org.scribble</groupId>
             <artifactId>parent</artifactId>

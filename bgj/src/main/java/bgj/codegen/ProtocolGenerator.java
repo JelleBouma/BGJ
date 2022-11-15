@@ -16,6 +16,9 @@ import bgj.util.*;
 import java.util.HashMap;
 import java.util.Locale;
 
+/**
+ * Generates the Java classes for a role.
+ */
 class ProtocolGenerator {
 
     static String pkg;
@@ -47,7 +50,6 @@ class ProtocolGenerator {
             ? corec.getMinimisedEGraph(gpn, role).init
             : corec.getEGraph(gpn, role).init;
         buildConnectionMaps(initialState, new HashSet<>());
-        //System.out.println(initialState.toAut());
         operations.fillPool(initialState);
         operations.distinguishOperations();
         for (Operation operation : operations)
@@ -72,6 +74,7 @@ class ProtocolGenerator {
                 buildConnectionMaps(succ, history);
     }
 
+    //FIXME: uses the same bad (redundant, convention breaking) package names as Scribble-Java for comparison purposes
     void processNames() {
         className = StringUtils.capitalise(gpn.getSimpleName().toString()) + StringUtils.capitalise(role.toString());
         ArrayList<String> pkgElements = new ArrayList<>(gpn.getElements());
@@ -86,10 +89,7 @@ class ProtocolGenerator {
      * @return A hashmap of file names and contents of the protocol class and payload classes.
      */
     HashMap<String, String> generateClasses(boolean verificationSkeleton) {
-        String dir = verificationSkeleton ? "verification-skeleton\\" : "src\\";
-
-        // Sung edit
-        dir = "";
+        String dir = "";
         String basepkg = pkg;
         pkg += verificationSkeleton ? ".abstr" : ".concr";
 
@@ -310,6 +310,10 @@ class ProtocolGenerator {
         classBuilder.appendImport("java.util.List");
     }
 
+    /**
+     * Import the classes we generated that hold the payloads for the message passing operations.
+     * @param cb The class which we are adding imports to.
+     */
     void generatePayloadImports(ClassBuilder cb) {
         for (String imprt : operations.getPayloadImports())
             cb.appendImport(imprt);
@@ -336,6 +340,11 @@ class ProtocolGenerator {
             classBuilder.appendAttribute("public", "int", "EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT), false, true);
     }
 
+    /**
+     * Generate the constructor for the protocol class.
+     * @param constructor The constructor for which contents need to be generated.
+     * @param verificationSkeleton true if this is a constructor on the verification side, false otherwise.
+     */
     void generateConstructor(MethodBuilder constructor, boolean verificationSkeleton) {
         constructor.appendStatement("state = " + initialState.id + ";");
         if (verificationSkeleton) {
@@ -373,6 +382,11 @@ class ProtocolGenerator {
         for (Operation operation : externalChoices)
             constructor.appendStatement("EXTERNAL_CHOICE_" + operation.getName().toUpperCase(Locale.ROOT) + " = " + operation.id + ";");
     }
+
+    /**
+     * Generate the method which receives external choice.
+     * @param verificationSkeleton true if this is the external choice receiver on the verification side, false otherwise.
+     */
     void generateExternalChoiceReceive(boolean verificationSkeleton) {
         MethodBuilder method = classBuilder.appendMethod("public", "int", "receiveExternalChoice", new ArrayList<>(), "Exception");
         if (verificationSkeleton) {
@@ -406,6 +420,9 @@ class ProtocolGenerator {
         }
     }
 
+    /**
+     * Generate the "private ScribMessage receiveScribMessage(Role role)" method which willl receive the ScribMessage internally.
+     */
     void generateReceiver() {
         MethodBuilder method = classBuilder.appendMethod("private", "ScribMessage", "receiveScribMessage", new ArrayList<>("Role role"), "Exception");
         if (hasExternalChoice) {
@@ -416,6 +433,11 @@ class ProtocolGenerator {
         method.appendStatement("return receiveSocket.readScribMessage(role);");
     }
 
+    /**
+     * Generate the method for a message passing operation.
+     * @param operation The operation for which to generate the method
+     * @param verificationSkeleton true if this is the operation on the verification side, false otherwise.
+     */
     void generateOperation(Operation operation, boolean verificationSkeleton) {
         MethodBuilder method = classBuilder.appendMethod("public", operation.getReturnType(), operation.getFullName(), operation.getParameters(), "Exception");
         if (verificationSkeleton)
@@ -424,6 +446,11 @@ class ProtocolGenerator {
             generateExecutableCode(operation, method);
     }
 
+    /**
+     * Generate the method to be executed for a message passing operation.
+     * @param operation The operation for which to generate the method
+     * @param method The method for the operation.
+     */
     void generateExecutableCode(Operation operation, MethodBuilder method) {
         generateContract(operation, method);
         if (operation.payload.isSend) {
@@ -444,6 +471,11 @@ class ProtocolGenerator {
             method.appendStatement("return res;");
     }
 
+    /**
+     * Generate the method to be verified for a message passing operation.
+     * @param operation The operation for which to generate the method
+     * @param method The method for the operation.
+     */
     void generateVerification(Operation operation, MethodBuilder method) {
         generateContract(operation, method);
         generateStateChange(operation, method, true);
@@ -453,6 +485,11 @@ class ProtocolGenerator {
             method.appendStatement(operation.payload.getDefaultReturnStatement());
     }
 
+    /**
+     * Generate the VerCors contract (permissions, preconditions, postconditions) for a message passing operation.
+     * @param operation The operation for which to generate the contract
+     * @param method The method for the operation.
+     */
     void generateContract(Operation operation, MethodBuilder method) {
         method.appendComment("@ context Perm(state, 1)" + (operation.isExternalChoice() ? " ** Perm(choice, 1);" : ";"));
         String nonNullCondition = operation.payload.name.equals("") ? "" : " && \\result != null";
@@ -476,6 +513,12 @@ class ProtocolGenerator {
 
     }
 
+    /**
+     * Generate a state change (changing the state attribute) for a message passing operation.
+     * @param operation The operation for which to generate the state change
+     * @param method The method for the operation.
+     * @param vercorsSkeleton true if this is the operation on the verification side, false otherwise.
+     */
     void generateStateChange(Operation operation, MethodBuilder method, boolean vercorsSkeleton) {
         if (operation.transitions.size() == 1) { // only one state transition exists for this operation
             StateTransition transition = operation.transitions.iterator().next();

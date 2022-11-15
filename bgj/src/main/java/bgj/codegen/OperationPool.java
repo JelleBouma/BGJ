@@ -9,6 +9,9 @@ import bgj.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * The list of all operations available to the selected role.
+ */
 public class OperationPool extends ArrayList<Operation> {
 
     /**
