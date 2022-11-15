@@ -16,15 +16,13 @@ public class ControlBuilder extends BlockBuilder {
         return res;
     }
 
-    public ControlBuilder appendStatements(Iterable<String> statements) {
+    public void appendStatements(Iterable<String> statements) {
         for (String statement : statements)
             content.add(new StatementBuilder(depth + 1, statement));
-        return this;
     }
 
-    public ControlBuilder appendStatement(String statement) {
+    public void appendStatement(String statement) {
         content.add(new StatementBuilder(depth + 1, statement));
-        return this;
     }
 
     @Override

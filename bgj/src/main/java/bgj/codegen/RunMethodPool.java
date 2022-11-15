@@ -5,6 +5,10 @@ import bgj.util.ArrayList;
 
 import java.util.List;
 
+/**
+ * The methods we need to generate for a base implementation of the protocol.
+ * When there is recursion in the protocol which is not tail to head recursion, multiple run methods will be needed.
+ */
 class RunMethodPool extends ArrayList<RunMethod> {
 
     int auxCounter = 0;

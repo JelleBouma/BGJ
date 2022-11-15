@@ -27,6 +27,7 @@ public class ScribbleVerCorsCodeGenerator {
         outputFiles(files, dir);
     }
 
+    //FIXME: doesn't generate anything for Windows anymore.
     private static HashMap<String, String> generateBat(Set<String> classFiles, String mainFile, String vercorsDir, GProtoName gpn, Role role) {
         HashMap<String, String> res = new HashMap<>();
 

@@ -7,11 +7,17 @@ import bgj.util.*;
 
 import java.util.stream.Collectors;
 
+/**
+ * The Payload of a message passing action, a payload has 0+ arguments (Arg).
+ */
 class Payload {
     String name; // Has the class name of the payload if applicable, otherwise an empty string.
     boolean isSend;
     ArrayList<Arg> contents = new ArrayList<>();
 
+    /**
+     * Construct a Payload object for a message passing action.
+     */
     Payload(EAction action) {
         isSend = action.isSend();
         name = action.isReceive() && action.payload.elems.size() >= 2 ? StringUtils.capitalise(action.mid.toString()) + "Payload" : "";
@@ -107,6 +113,11 @@ class Payload {
                 res.add(arg.classPath);
         return res;
     }
+
+    /**
+     * Generate a class for this payload (needed if the payload has multiple parameters).
+     * @return A ClassBuilder object which contains the generated Payload class.
+     */
     ClassBuilder getPayloadClass() {
         ClassBuilder cb = new ClassBuilder(ProtocolGenerator.pkg, "public", name);
         MethodBuilder constructor = cb.createConstructor("public", contents.convertAll(a -> a.type + " " + a.name));

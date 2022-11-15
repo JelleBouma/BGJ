@@ -7,6 +7,11 @@ import bgj.util.ArrayList;
 import bgj.util.HashSet;
 import bgj.util.StringUtils;
 
+/**
+ * An Operation is a message to be passed.
+ * It is distinct by the combination of its name, target role, direction and payload.
+ * An Operation has 1+ state transitions (StateTransition).
+ */
 public class Operation {
 
     int id;

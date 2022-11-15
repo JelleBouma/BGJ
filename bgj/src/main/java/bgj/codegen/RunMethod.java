@@ -4,6 +4,10 @@ import org.scribble.core.model.endpoint.EState;
 
 import java.util.Objects;
 
+/**
+ * A run method representation consisting of a starting EState and a name.
+ * An object of this class represents a method we need to generate for the implementation (the generated main class).
+ */
 public class RunMethod {
     EState head;
     String name;
