@@ -21,14 +21,13 @@ public class ScribbleVerCorsCodeGenerator {
         HashMap<String, String> verificationClasses = generator.generateClasses(true);
         verificationClasses.putAll(generator.generateUtilities(true));
         HashMap<String, String> main = generator.generateMainClass();
-        files.putAll(generateBat(verificationClasses.keySet(), main.keySet().stream().findAny().get(), vercorsDir, gpn, role));
+        files.putAll(generateScripts(verificationClasses.keySet(), generator.className + "Main.java", vercorsDir, gpn, role));
         files.putAll(main);
         files.putAll(verificationClasses);
         outputFiles(files, dir);
     }
 
-    //FIXME: doesn't generate anything for Windows anymore.
-    private static HashMap<String, String> generateBat(Set<String> classFiles, String mainFile, String vercorsDir, GProtoName gpn, Role role) {
+    private static HashMap<String, String> generateScripts(Set<String> classFiles, String mainFile, String vercorsDir, GProtoName gpn, Role role) {
         HashMap<String, String> res = new HashMap<>();
 
         // vercorsDir   = JAVA_HOME? ; VERCORS_HOME?
@@ -52,10 +51,27 @@ public class ScribbleVerCorsCodeGenerator {
 
         res.put(gpn.toString().replace(".", "/") + "/verify.sh", script);
 
-//        String dir = gpn.toString().replace(".", File.separator) + File.separator + "abstr" + File.separator;
-//        res.put(dir + "verify" + StringUtils.capitalise(role.toString()) + ".bat",
-//                "robocopy " + mainFile.substring(0, mainFile.lastIndexOf(File.separatorChar)) + " verification-skeleton/" + mainFile.substring(4, mainFile.lastIndexOf(File.separatorChar)) + " " + mainFile.substring(mainFile.lastIndexOf(File.separatorChar) + 1) + "\r\n" +
-//                "start \"Verifying Scribble Protocol\" " + vercorsDir + File.separator + "bin" + File.separator + "vercors --silicon " + String.join(" ", classFiles)+ " verification-skeleton" + File.separator + mainFile.substring(4));
+        String dir = gpn.toString().replace(".", "\\") + "\\";
+        res.put(dir + "verify.bat",
+                "rmdir .\\tmp /s /q\r\n" +
+                "robocopy . .\\tmp *.java\r\n" +
+                "robocopy .\\abstr .\\tmp *.java\r\n" +
+                "setlocal EnableExtensions DisableDelayedExpansion\r\n" +
+                "set \"search=package \"\r\n" +
+                "set \"replace=//package \"\r\n" +
+                "set \"textFile=*.java\"\r\n" +
+                "set \"rootDir=./tmp\"\r\n" +
+                "for %%j in (\"%rootDir%\\%textFile%\") do (\r\n" +
+                "    for /f \"delims=\" %%i in ('type \"%%~j\" ^& break ^> \"%%~j\"') do (\r\n" +
+                "        set \"line=%%i\"\r\n" +
+                "        setlocal EnableDelayedExpansion\r\n" +
+                "        set \"line=!line:%search%=%replace%!\"\r\n" +
+                "        >>\"%%~j\" echo(!line!\r\n" +
+                "        endlocal\r\n" +
+                "    )\r\n" +
+                ")\r\n" +
+                "endlocal\r\n" +
+                "start \"Verifying Scribble Protocol\" " + vercorsDir + "\\bin\\" + "vercors --silicon tmp\\*.java");
         return res;
     }
 
