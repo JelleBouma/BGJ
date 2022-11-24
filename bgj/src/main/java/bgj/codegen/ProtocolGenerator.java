@@ -22,7 +22,7 @@ import java.util.Locale;
 class ProtocolGenerator {
 
     static String pkg;
-    static String className;
+    String className;
     Job job;
     static Module main;
     Core core;
@@ -74,13 +74,10 @@ class ProtocolGenerator {
                 buildConnectionMaps(succ, history);
     }
 
-    //FIXME: uses the same bad (redundant, convention breaking) package names as Scribble-Java for comparison purposes
     void processNames() {
         className = StringUtils.capitalise(gpn.getSimpleName().toString()) + StringUtils.capitalise(role.toString());
         ArrayList<String> pkgElements = new ArrayList<>(gpn.getElements());
-//        pkgElements.remove(pkgElements.size() - 1); // remove the last two elements as these contain the protocol name
-//        pkgElements.remove(pkgElements.size() - 1);
-        pkg = String.join(".", pkgElements);//.toLowerCase(Locale.ROOT);
+        pkg = String.join(".", pkgElements).toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -328,6 +325,8 @@ class ProtocolGenerator {
         else {
             for (Role r : allRoles)
                 classBuilder.appendAttribute("", "Role", r.toString(), "new Role(\"" + r + "\")");
+            for (Operation op : operations)
+                classBuilder.appendAttribute("", "Op", op.getName(),"new Op(\"" + op.getName() + "\")");
             classBuilder.appendAttribute("MPSTEndpoint<Session, Role>", "endpoint");
             if (hasExternalChoice) {
                 classBuilder.appendAttribute("private", "boolean", "choiceMade", "false");
@@ -454,7 +453,7 @@ class ProtocolGenerator {
     void generateExecutableCode(Operation operation, MethodBuilder method) {
         generateContract(operation, method);
         if (operation.payload.isSend) {
-            ArrayList<String> parameters = new ArrayList<>(operation.targetRole.toString(), "new Op(\"" + operation.getName() + "\")");
+            ArrayList<String> parameters = new ArrayList<>(operation.targetRole.toString(), operation.getName());
             parameters.addAll(operation.payload.contents.convertAll(a -> a.name));
             method.appendStatement("outputSocket.writeScribMessage(" + String.join(", ", parameters) + ");");
         } else if (operation.getReturnType().equals("void"))
