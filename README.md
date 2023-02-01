@@ -1,6 +1,8 @@
 # Java API and Static Verification Annotation Generator
 BGJ is a tool to generate Java APIs and processes from a Scribble protocol.
-Unlike previous tools, BGJ also generates annotations which can be checked by the static verifier VerCors.
+
+Previous tools could not statically verify full adherence to the protocol, having to rely on some dynamic checks.
+Unlike previous tools, BGJ generates annotations which can be checked by the static verifier VerCors.
 This verification checks whether the input protocol is adhered to, without affecting performance or style of the generated code.
 
 BGJ is an edit of Scribble-Java (https://github.com/scribble/scribble-java) using a new code generation module.
